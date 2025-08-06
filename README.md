@@ -2,20 +2,33 @@
 
 A web-based survey form for sprint prioritization with capacity management, real-time progress tracking, and **AWS Lambda integration** for data persistence.
 
+## 🎯 **ESTADO ACTUAL: COMPLETAMENTE FUNCIONAL** ✅
+
+### 📊 **Última actualización:** 2025-08-06 - Sistema funcionando al 100%
+
+- ✅ Formulario principal operativo
+- ✅ Integración AWS funcionando
+- ✅ Base de datos guardando datos
+- ✅ Tests de conexión pasando
+- ✅ Todos los archivos actualizados
+
 ## 🚀 Quick Start
 
 ```bash
 # Clone or download the project
-cd VotingForm
-
-# Install dependencies
-npm install
+cd VotingForm/sprint
 
 # Start the development server
-npm start
+python3 -m http.server 8080
 ```
 
 The application will open at `http://localhost:8080`
+
+## 🧪 **URLs de Prueba:**
+
+- **Formulario principal:** `http://localhost:8080/index.html`
+- **Test de conexión AWS:** `http://localhost:8080/test-aws-connection.html`
+- **Formulario de prueba:** `http://localhost:8080/test-form.html`
 
 ## 📁 Project Structure
 
