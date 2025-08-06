@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Conexión</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { background: #0066cc; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px; }
+        button:hover { background: #0052a3; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test de Conexión AWS</h1>
+        <p>Esta página te ayuda a verificar si la conexión con la base de datos funciona.</p>
+        
+        <button onclick="testEnvio()">📤 Probar Envío de Datos</button>
+        <button onclick="testConsulta()">📋 Probar Consulta de Datos</button>
+        
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://dubo90gxce.execute-api.us-east-1.amazonaws.com/prod';
+        
+        async function testEnvio() {
+            const resultado = document.getElementById('resultado');
+            resultado.innerHTML = '<div class="info">⏳ Enviando datos de prueba...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'test-conexion@foundever.com',
+                        totalHours: 16,
+                        selectedItems: [
+                            {
+                                questionNumber: '1',
+                                questionTitle: 'Test de conexión desde GitHub',
+                                estimatedHours: '16',
+                                isEstimated: true
+                            }
+                        ]
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultado.innerHTML = `
+                        <div class="success">
+                            ✅ <strong>¡Envío Exitoso!</strong><br>
+                            ID: ${data.id}<br>
+                            Fecha: ${new Date(data.submittedAt).toLocaleString()}<br>
+                            Email: ${data.data.email}<br>
+                            Horas: ${data.data.totalHours}h
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+            } catch (error) {
+                resultado.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>Error en el Envío:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function testConsulta() {
+            const resultado = document.getElementById('resultado');
+            resultado.innerHTML = '<div class="info">⏳ Consultando datos...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/query`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const totalHoras = data.submissions.reduce((sum, s) => sum + s.totalHours, 0);
+                    
+                    resultado.innerHTML = `
+                        <div class="success">
+                            ✅ <strong>¡Consulta Exitosa!</strong><br>
+                            Total formularios: ${data.count}<br>
+                            Total horas: ${totalHoras}h<br>
+                            Últimos emails: ${data.submissions.slice(0, 3).map(s => s.email).join(', ')}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+            } catch (error) {
+                resultado.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>Error en la Consulta:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
