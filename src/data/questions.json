@@ -21,7 +21,10 @@
       "type": "checkbox",
       "title": "The feedback pointers such as strengths, opportunities, and best practices/resources should be included in the exported observation form report.",
       "estimatedHours": 4,
-      "required": false
+      "required": false,
+      "hasImage": true,
+      "imageSrc": "image1.png",
+      "imageAlt": "Feedback pointers in observation form report"
     },
     {
       "id": "question3",
@@ -56,7 +59,10 @@
       "type": "checkbox",
       "title": "After updating the logic for STAR upon graduation or termination, we are experiencing issues where the entire history is not visible. While we are fine with blocking edits, we would like to be able to view the full history of the STAR updates. This will help us ensure transparency and maintain a complete record of all changes made to the STAR data.",
       "estimatedHours": 6,
-      "required": false
+      "required": false,
+      "hasImage": true,
+      "imageSrc": "image2.png",
+      "imageAlt": "STAR history visibility issue"
     },
     {
       "id": "question8",

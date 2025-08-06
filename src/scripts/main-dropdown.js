@@ -1,7 +1,8 @@
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Loading questions...');
-    loadQuestions();
-});
+// Removed automatic loading to prevent duplication with main.js
+// document.addEventListener('DOMContentLoaded', function() {
+//     console.log('Loading questions...');
+//     loadQuestions();
+// });
 
 async function loadQuestions() {
     try {

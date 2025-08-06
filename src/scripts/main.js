@@ -176,14 +176,35 @@ function createQuestionCard(question, questionNumber) {
             </div>
         ` : '';
         
+        if (question.hasImage) {
+            cardHTML += `
+                <div class="screenshot-container">
+                    <img src="${question.imageSrc}" alt="${question.imageAlt}" class="screenshot">
+                </div>
+            `;
+        }
+        
         cardHTML += `
             ${devFeedbackHTML}
             <div class="checkbox-group">
                 <label class="checkbox-option">
-                    <input type="checkbox" name="${question.id}" value="${question.estimatedHours || 'TBD'}" 
+                    <input type="checkbox" name="${question.id}_selected" value="${question.estimatedHours || 'TBD'}" 
                            ${question.required ? 'required' : ''}>
                     <span class="checkbox-label">${hoursText}</span>
                 </label>
+            </div>
+            
+            <!-- Add priority dropdown when item is selected -->
+            <div class="priority-section" id="priority-${question.id}" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e8eaed;">
+                <label class="priority-label">Select Priority for this item:</label>
+                <div class="dropdown-group">
+                    <select class="dropdown-select priority-dropdown" name="${question.id}_priority" disabled>
+                        <option value="" disabled selected>Select Priority</option>
+                        <option value="high">🔴 High Priority</option>
+                        <option value="medium">🟡 Medium Priority</option>
+                        <option value="low">🟢 Low Priority</option>
+                    </select>
+                </div>
             </div>
         `;
     } else if (question.type === 'radio') {
@@ -283,9 +304,21 @@ function initializeForm(totalQuestions) {
     // Initialize floating button
     initializeFloatingButton(floatingBtn);
     
-    // Add change listeners for progress tracking
-    form.addEventListener('change', updateProgress);
-    form.addEventListener('input', updateProgress);
+    // Add change listeners for both checkboxes, dropdowns, and progress tracking
+    form.addEventListener('change', function(e) {
+        if (e.target.type === 'checkbox') {
+            handleCheckboxChange(e.target);
+        } else if (e.target.classList.contains('dropdown-select')) {
+            handleDropdownChange(e.target);
+        }
+        updateProgress();
+        updateFloatingButton();
+    });
+    
+    form.addEventListener('input', function(e) {
+        updateProgress();
+        updateFloatingButton();
+    });
     
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -294,17 +327,19 @@ function initializeForm(totalQuestions) {
         const email = formData.get('email');
         
         // Validate email
-        if (!email || !validateEmail(email)) {
+        if (!email || !email.includes('@')) {
             showError('Please enter a valid email address.');
             return;
         }
         
-        // Collect selected items and calculate total hours
+        // Collect selected items and their priorities
         const selectedItems = [];
         let totalHours = 0;
-        let itemsWithoutHours = 0;
-        const CAPACITY_LIMIT = 260;
+        let itemsWithTBD = 0;
+        const priorityCount = { high: 0, medium: 0, low: 0 };
+        const responses = { email: email };
         
+        // Check all checkboxes and their corresponding priorities
         const checkboxes = form.querySelectorAll('input[type="checkbox"]:checked');
         
         if (checkboxes.length === 0) {
@@ -312,169 +347,114 @@ function initializeForm(totalQuestions) {
             return;
         }
         
-        checkboxes.forEach(checkbox => {
-            const questionCard = checkbox.closest('.question-card');
-            const questionNumber = questionCard.querySelector('.question-number').textContent;
-            const hours = checkbox.value;
+        for (const checkbox of checkboxes) {
+            const questionId = checkbox.name.replace('_selected', '');
+            const priorityDropdown = document.querySelector(`select[name="${questionId}_priority"]`);
             
-            selectedItems.push({
-                question: questionNumber,
-                hours: hours
-            });
-            
-            if (hours !== 'TBD' && !isNaN(hours)) {
-                totalHours += parseInt(hours);
-            } else {
-                itemsWithoutHours++;
-            }
-        });
-        
-        // Check capacity limit
-        if (totalHours > CAPACITY_LIMIT) {
-            const excess = totalHours - CAPACITY_LIMIT;
-            showError(`⚠️ Selection exceeds sprint capacity! You've selected ${totalHours}h, which is ${excess}h over the ${CAPACITY_LIMIT}h limit. Please remove some items to continue.`);
-            return;
-        }
-        
-        // Show loading state
-        const floatingBtn = document.getElementById('floating-submit');
-        const originalBtnText = floatingBtn.querySelector('.btn-text').textContent;
-        const originalBtnIcon = floatingBtn.querySelector('.btn-icon').textContent;
-        
-        floatingBtn.querySelector('.btn-text').textContent = 'Saving...';
-        floatingBtn.querySelector('.btn-icon').textContent = '⏳';
-        floatingBtn.disabled = true;
-        
-        try {
-            // Prepare data for AWS using the proper function
-            console.log('🔧 Preparing data for AWS...');
-            console.log('📋 FormData entries:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`   ${key}: ${value}`);
-            }
-            
-            const questionsData = await fetch('src/data/questions.json').then(r => r.json());
-            console.log('📄 Questions loaded:', questionsData.questions.length);
-            
-            const awsData = window.AWSIntegration.prepareFormDataForAWS(formData, questionsData.questions);
-            
-            console.log('📤 Prepared AWS data:', awsData);
-            console.log('✅ Required fields check:');
-            console.log('   email:', !!awsData.email, awsData.email);
-            console.log('   selectedItems:', !!awsData.selectedItems, awsData.selectedItems?.length);
-            console.log('   totalHours:', awsData.totalHours !== undefined, awsData.totalHours);
-            
-            // Check capacity limit using the calculated data
-            const CAPACITY_LIMIT = 260;
-            if (awsData.totalHours > CAPACITY_LIMIT) {
-                const excess = awsData.totalHours - CAPACITY_LIMIT;
-                showError(`⚠️ Selection exceeds sprint capacity! You've selected ${awsData.totalHours}h, which is ${excess}h over the ${CAPACITY_LIMIT}h limit. Please remove some items to continue.`);
-                
-                // Reset button state
-                floatingBtn.querySelector('.btn-text').textContent = originalBtnText;
-                floatingBtn.querySelector('.btn-icon').textContent = originalBtnIcon;
-                floatingBtn.disabled = false;
+            if (!priorityDropdown || !priorityDropdown.value) {
+                showError('Please select a priority for all selected items.');
                 return;
             }
             
-            // Submit to AWS
-            const awsResponse = await window.AWSIntegration.submitToAWS(awsData);
+            const hours = checkbox.value || 'TBD';
+            const priority = priorityDropdown.value;
+            const questionCard = checkbox.closest('.question-card');
+            const questionNumberElement = questionCard?.querySelector('.question-number');
+            const questionNumber = questionNumberElement ? questionNumberElement.textContent.trim() : 'Unknown';
             
-            console.log('AWS Response:', awsResponse);
+            // Debug logging
+            console.log('Debug item data:', {
+                hours: hours,
+                priority: priority,
+                questionNumber: questionNumber,
+                questionCard: questionCard,
+                checkboxValue: checkbox.value,
+                checkboxName: checkbox.name
+            });
             
-            // Display success message with summary using AWS data
-            let hoursText = '';
-            let capacityInfo = '';
-            
-            if (awsData.totalHours > 0) {
-                hoursText = `<p><strong>Total estimated hours:</strong> ${awsData.totalHours}h`;
-                if (awsData.summary.itemsWithTBD > 0) {
-                    hoursText += ` (+ ${awsData.summary.itemsWithTBD} items with TBD hours)`;
-                }
-                hoursText += '</p>';
-                
-                // Add capacity information
-                const capacityPercentage = awsData.summary.capacityUsed;
-                if (capacityPercentage > 80) {
-                    capacityInfo = `<p class="capacity-info capacity-near">⚡ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${awsData.summary.remainingCapacity}h remaining)</p>`;
-                } else {
-                    capacityInfo = `<p class="capacity-info capacity-ok">✅ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${awsData.summary.remainingCapacity}h remaining)</p>`;
-                }
+            // Ensure we have valid data before adding to selectedItems
+            if (questionNumber !== 'Unknown' && priority && hours) {
+                selectedItems.push({
+                    questionNumber: parseInt(questionNumber) || 0,
+                    priority: priority,
+                    hours: hours
+                });
+            } else {
+                console.error('Invalid item data detected:', {
+                    questionNumber,
+                    priority,
+                    hours,
+                    checkbox: checkbox
+                });
             }
             
-            let itemsList = '<ul>';
-            awsData.selectedItems.forEach((item, index) => {
-                itemsList += `<li>${item.title}: ${item.estimatedHours === null ? 'TBD' : item.estimatedHours + 'h'}</li>`;
-            });
-            itemsList += '</ul>';
+            // Add to responses object
+            responses[`${questionId}_selected`] = hours;
+            responses[`${questionId}_priority`] = priority;
             
-            resultMessage.innerHTML = `
-                <div class="success-header">
-                    <strong>✅ Thank you, ${awsData.email}! Your responses have been saved to the database successfully.</strong>
-                    <p class="aws-success">🚀 Data saved to AWS at ${new Date().toLocaleString()}</p>
-                    <p class="aws-success">📊 Record ID: ${awsResponse.id}</p>
-                </div>
-                <div class="summary-section">
-                    <h3>Selected Items Summary:</h3>
-                    <p><strong>Total items selected:</strong> ${awsData.selectedItems.length}</p>
-                    ${hoursText}
-                    ${capacityInfo}
-                    <h4>Selected Items:</h4>
-                    ${itemsList}
-                </div>
-            `;
-            resultMessage.classList.add('show');
+            // Count hours
+            if (hours !== 'TBD' && !isNaN(hours)) {
+                totalHours += parseInt(hours);
+            } else {
+                itemsWithTBD++;
+            }
             
-            // Update button to success state
-            floatingBtn.querySelector('.btn-text').textContent = 'Saved!';
-            floatingBtn.querySelector('.btn-icon').textContent = '✅';
-            
-            console.log('Form submitted successfully to AWS:', awsResponse);
-            
-        } catch (error) {
-            console.error('Error submitting to AWS:', error);
-            
-            // Show error message
-            resultMessage.innerHTML = `
-                <div class="error-header">
-                    <strong>❌ Error saving your responses</strong>
-                    <p class="aws-error">There was a problem saving your data to the database. Please try again.</p>
-                    <p class="error-details">Error: ${error.message}</p>
-                </div>
-            `;
-            resultMessage.classList.add('show', 'error');
-            
-            // Reset button
-            floatingBtn.querySelector('.btn-text').textContent = originalBtnText;
-            floatingBtn.querySelector('.btn-icon').textContent = originalBtnIcon;
-            floatingBtn.disabled = false;
-            
-            return;
+            // Count priorities
+            priorityCount[priority]++;
         }
         
-        console.log('Selected items:', selectedItems);
-        console.log('Total hours:', totalHours);
-        console.log('Capacity used:', Math.round((totalHours / CAPACITY_LIMIT) * 100) + '%');
+        // Calculate total points (high=30, medium=20, low=10)
+        const totalPoints = (priorityCount.high * 30) + (priorityCount.medium * 20) + (priorityCount.low * 10);
         
-        resultMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Calculate capacity used
+        const CAPACITY_LIMIT = 260;
+        const capacityUsed = Math.round((totalHours / CAPACITY_LIMIT) * 100);
         
-        // Update floating button after submission
-        floatingBtn.querySelector('.btn-text').textContent = 'Submitted ✓';
-        floatingBtn.querySelector('.btn-icon').textContent = '✅';
-        floatingBtn.disabled = true;
-        floatingBtn.classList.remove('pulse', 'celebrate', 'over-capacity');
+        // Prepare enhanced submission data with priority information
+        const submissionData = {
+            email: email,
+            selectedItems: selectedItems,
+            totalHours: totalHours,
+            itemsWithTBD: itemsWithTBD,
+            capacityUsed: capacityUsed,
+            priorityCount: priorityCount,
+            totalPoints: totalPoints,
+            responses: responses,
+            timestamp: new Date().toISOString(),
+            
+            // Enhanced priority data for AWS
+            highPriorityCount: priorityCount.high,
+            mediumPriorityCount: priorityCount.medium,
+            lowPriorityCount: priorityCount.low,
+            priorityBreakdown: priorityCount,
+            
+            // Additional metadata
+            sprintNumber: 23,
+            formVersion: "v2.0-with-priority"
+        };
         
-        setTimeout(() => {
-            if (confirm('Would you like to submit another response?')) {
-                form.reset();
-                resultMessage.classList.remove('show');
-                floatingBtn.querySelector('.btn-text').textContent = 'Submit';
-                floatingBtn.querySelector('.btn-icon').textContent = '📝';
-                floatingBtn.disabled = false;
-                updateProgress();
-                updateFloatingButton();
+        console.log('Form submitted with enhanced priority data:', submissionData);
+        console.log('Selected items before success message:', selectedItems);
+        
+        // Show loading state
+        updateSubmitButtonLoading(true);
+        
+        try {
+            // Submit to AWS with priority data
+            const result = await window.AWSIntegration.submitToAWS(submissionData);
+            
+            if (result && result.success !== false) {
+                showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, priorityCount, totalPoints, true);
+            } else {
+                // Show success but with warning about storage
+                showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, priorityCount, totalPoints, false, result?.error);
             }
-        }, 3000);
+        } catch (error) {
+            console.error('AWS submission error:', error);
+            showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, priorityCount, totalPoints, false, error.message);
+        } finally {
+            updateSubmitButtonLoading(false);
+        }
     });
     
     // Add interaction effects
@@ -585,11 +565,19 @@ function updateFloatingButton() {
     const checkboxes = form.querySelectorAll('input[type="checkbox"]');
     const checkedBoxes = form.querySelectorAll('input[type="checkbox"]:checked');
     
-    // Calculate total hours in real time
+    // Calculate total hours and check priorities
     let totalHours = 0;
     let itemsWithTBD = 0;
+    let allHavePriority = true;
     
     checkedBoxes.forEach(checkbox => {
+        const questionId = checkbox.name.replace('_selected', '');
+        const priorityDropdown = document.querySelector(`select[name="${questionId}_priority"]`);
+        
+        if (!priorityDropdown || !priorityDropdown.value) {
+            allHavePriority = false;
+        }
+        
         const hours = checkbox.value;
         if (hours === 'TBD' || hours === null || hours === '') {
             itemsWithTBD++;
@@ -621,6 +609,7 @@ function updateFloatingButton() {
     // Check if form has minimum requirements
     const hasEmail = emailInput && emailInput.value.trim() !== '';
     const hasSelections = checkedBoxes.length > 0;
+    const isComplete = hasEmail && hasSelections && allHavePriority;
     
     // Remove all state classes first
     floatingBtn.classList.remove('pulse', 'celebrate', 'over-capacity');
@@ -629,10 +618,14 @@ function updateFloatingButton() {
         // Over capacity - add warning state
         floatingBtn.classList.add('over-capacity');
         floatingBtn.style.opacity = '1';
-    } else if (hasEmail && hasSelections) {
+    } else if (isComplete) {
         // Form is ready - add celebration effect
         floatingBtn.classList.add('celebrate');
         floatingBtn.style.opacity = '1';
+    } else if (hasSelections && hasEmail) {
+        // Has selections but no priorities - add pulse
+        floatingBtn.classList.add('pulse');
+        floatingBtn.style.opacity = '0.9';
     } else if (hasSelections) {
         // Has selections but no email - add pulse
         floatingBtn.classList.add('pulse');
@@ -666,7 +659,7 @@ function updateFloatingButton() {
             const excess = totalHours - CAPACITY_LIMIT;
             btnText.textContent = `Over by ${excess}h!`;
             btnIcon.textContent = '⚠️';
-        } else {
+        } else if (isComplete) {
             // Set text based on selection count and hours - more concise
             if (checkedBoxes.length === 1) {
                 btnText.textContent = hoursText ? `Submit ${hoursText}` : 'Submit 1 item';
@@ -685,6 +678,10 @@ function updateFloatingButton() {
                 btnText.textContent = `Submit ${checkedBoxes.length} TBD`;
                 btnIcon.textContent = '🔮';
             }
+        } else {
+            // Has items but missing priorities or email
+            btnText.textContent = `Submit (${checkedBoxes.length} items)`;
+            btnIcon.textContent = '📝';
         }
     }
     
@@ -769,6 +766,160 @@ function initializeStickyHeaders() {
             formHeader.style.backdropFilter = 'blur(10px)';
         }
     });
+}
+
+function handleCheckboxChange(checkbox) {
+    const questionId = checkbox.name.replace('_selected', '');
+    const prioritySection = document.getElementById(`priority-${questionId}`);
+    const priorityDropdown = document.querySelector(`select[name="${questionId}_priority"]`);
+    
+    if (checkbox.checked) {
+        // Show priority section and enable dropdown
+        prioritySection.style.display = 'block';
+        priorityDropdown.disabled = false;
+        priorityDropdown.required = true;
+    } else {
+        // Hide priority section and disable dropdown
+        prioritySection.style.display = 'none';
+        priorityDropdown.disabled = true;
+        priorityDropdown.required = false;
+        priorityDropdown.value = '';
+        handleDropdownChange(priorityDropdown); // Reset styling
+    }
+}
+
+function handleDropdownChange(dropdown) {
+    const value = dropdown.value;
+    
+    // Remove all priority classes
+    dropdown.classList.remove('priority-high', 'priority-medium', 'priority-low');
+    
+    // Add appropriate class and animation
+    if (value) {
+        dropdown.classList.add(`priority-${value}`, 'selecting');
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            dropdown.classList.remove('selecting');
+        }, 300);
+    }
+}
+
+function updateSubmitButtonLoading(isLoading) {
+    const floatingBtn = document.getElementById('floating-submit');
+    if (!floatingBtn) return;
+    
+    const btnText = floatingBtn.querySelector('.btn-text');
+    const btnIcon = floatingBtn.querySelector('.btn-icon');
+    
+    if (isLoading) {
+        btnText.textContent = 'Submitting...';
+        btnIcon.textContent = '⏳';
+        floatingBtn.disabled = true;
+        floatingBtn.style.opacity = '0.7';
+    } else {
+        btnText.textContent = 'Submitted ✓';
+        btnIcon.textContent = '✅';
+        floatingBtn.disabled = true;
+        floatingBtn.style.background = 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)';
+    }
+}
+
+function showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, priorityCount, totalPoints, savedToDatabase = true, error = null) {
+    const resultMessage = document.getElementById('result-message');
+    
+    // Debug logging to see what data we're working with
+    console.log('Success message data:', {
+        email,
+        selectedItems,
+        totalHours,
+        itemsWithTBD,
+        priorityCount,
+        totalPoints
+    });
+    
+    // Create detailed items list with priorities
+    let itemsList = '<div class="items-grid" style="display: grid; gap: 8px; margin: 12px 0;">';
+    selectedItems.forEach((item, index) => {
+        // Handle potential undefined values with fallbacks
+        const questionNumber = item?.questionNumber || (index + 1);
+        const priority = item?.priority || 'unknown';
+        const hours = item?.hours || 'TBD';
+        
+        const priorityEmoji = priority === 'high' ? '🔴' : priority === 'medium' ? '🟡' : priority === 'low' ? '🟢' : '⚪';
+        const priorityLabel = priority === 'high' ? 'High' : priority === 'medium' ? 'Medium' : priority === 'low' ? 'Low' : 'Unknown';
+        const borderColor = priority === 'high' ? '#dc2626' : priority === 'medium' ? '#f59e0b' : priority === 'low' ? '#059669' : '#6b7280';
+        
+        itemsList += `
+            <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid ${borderColor};">
+                <strong>${priorityEmoji} Question ${questionNumber} - ${priorityLabel} Priority</strong><br>
+                <small style="color: #6b7280;">${hours} hours</small>
+            </div>
+        `;
+    });
+    itemsList += '</div>';
+    
+    // Database status message
+    let dbStatusMessage = '';
+    if (savedToDatabase) {
+        dbStatusMessage = '<div style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 12px; border-radius: 6px; margin: 12px 0;">💾 <strong>Successfully saved to database</strong></div>';
+    } else {
+        dbStatusMessage = `<div style="background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; padding: 12px; border-radius: 6px; margin: 12px 0;">⚠️ <strong>Saved locally</strong> - Database connection issue: ${error || 'Unknown error'}</div>`;
+    }
+    
+    resultMessage.innerHTML = `
+        <div style="background: #f0fff4; border: 1px solid #bbf7d0; color: #166534; padding: 24px; border-radius: 12px; margin: 20px 0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 8px 0;">✅ Thank you, ${email}!</h3>
+                <p style="margin: 0; color: #059669;">Your sprint prioritization has been submitted successfully.</p>
+            </div>
+            
+            ${dbStatusMessage}
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #bbf7d0;">
+                <h4 style="margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+                    📋 Selected Items (${selectedItems.length})
+                </h4>
+                ${itemsList}
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px;">
+                    <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #d1d5db;">
+                        <h5 style="margin: 0 0 8px 0; color: #374151;">⏱️ Time Estimation</h5>
+                        <p style="margin: 0; font-size: 18px; font-weight: 600;">${totalHours}h${itemsWithTBD > 0 ? ` + ${itemsWithTBD} TBD` : ''}</p>
+                    </div>
+                    
+                    <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #d1d5db;">
+                        <h5 style="margin: 0 0 8px 0; color: #374151;">🎯 Priority Points</h5>
+                        <p style="margin: 0; font-size: 18px; font-weight: 600; color: #059669;">${totalPoints}</p>
+                    </div>
+                </div>
+                
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #d1d5db; margin-top: 16px;">
+                    <h5 style="margin: 0 0 12px 0; color: #374151;">📊 Priority Breakdown</h5>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px;">🔴</div>
+                            <div style="font-weight: 600; color: #dc2626;">${priorityCount.high}</div>
+                            <div style="font-size: 12px; color: #6b7280;">High Priority</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px;">🟡</div>
+                            <div style="font-weight: 600; color: #f59e0b;">${priorityCount.medium}</div>
+                            <div style="font-size: 12px; color: #6b7280;">Medium Priority</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px;">🟢</div>
+                            <div style="font-weight: 600; color: #059669;">${priorityCount.low}</div>
+                            <div style="font-size: 12px; color: #6b7280;">Low Priority</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    resultMessage.classList.add('show');
+    resultMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // Initialize everything when DOM is loaded
