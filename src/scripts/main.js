@@ -346,7 +346,7 @@ function initializeForm(totalQuestions) {
         floatingBtn.disabled = true;
         
         try {
-            // Prepare data for AWS
+            // Prepare data for AWS using the proper function
             console.log('🔧 Preparing data for AWS...');
             console.log('📋 FormData entries:');
             for (let [key, value] of formData.entries()) {
@@ -364,45 +364,59 @@ function initializeForm(totalQuestions) {
             console.log('   selectedItems:', !!awsData.selectedItems, awsData.selectedItems?.length);
             console.log('   totalHours:', awsData.totalHours !== undefined, awsData.totalHours);
             
+            // Check capacity limit using the calculated data
+            const CAPACITY_LIMIT = 260;
+            if (awsData.totalHours > CAPACITY_LIMIT) {
+                const excess = awsData.totalHours - CAPACITY_LIMIT;
+                showError(`⚠️ Selection exceeds sprint capacity! You've selected ${awsData.totalHours}h, which is ${excess}h over the ${CAPACITY_LIMIT}h limit. Please remove some items to continue.`);
+                
+                // Reset button state
+                floatingBtn.querySelector('.btn-text').textContent = originalBtnText;
+                floatingBtn.querySelector('.btn-icon').textContent = originalBtnIcon;
+                floatingBtn.disabled = false;
+                return;
+            }
+            
             // Submit to AWS
             const awsResponse = await window.AWSIntegration.submitToAWS(awsData);
             
             console.log('AWS Response:', awsResponse);
             
-            // Display success message with summary
+            // Display success message with summary using AWS data
             let hoursText = '';
             let capacityInfo = '';
             
-            if (totalHours > 0) {
-                hoursText = `<p><strong>Total estimated hours:</strong> ${totalHours}h`;
-                if (itemsWithoutHours > 0) {
-                    hoursText += ` (+ ${itemsWithoutHours} items with TBD hours)`;
+            if (awsData.totalHours > 0) {
+                hoursText = `<p><strong>Total estimated hours:</strong> ${awsData.totalHours}h`;
+                if (awsData.summary.itemsWithTBD > 0) {
+                    hoursText += ` (+ ${awsData.summary.itemsWithTBD} items with TBD hours)`;
                 }
                 hoursText += '</p>';
                 
                 // Add capacity information
-                const capacityPercentage = Math.round((totalHours / CAPACITY_LIMIT) * 100);
+                const capacityPercentage = awsData.summary.capacityUsed;
                 if (capacityPercentage > 80) {
-                    capacityInfo = `<p class="capacity-info capacity-near">⚡ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${CAPACITY_LIMIT - totalHours}h remaining)</p>`;
+                    capacityInfo = `<p class="capacity-info capacity-near">⚡ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${awsData.summary.remainingCapacity}h remaining)</p>`;
                 } else {
-                    capacityInfo = `<p class="capacity-info capacity-ok">✅ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${CAPACITY_LIMIT - totalHours}h remaining)</p>`;
+                    capacityInfo = `<p class="capacity-info capacity-ok">✅ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${awsData.summary.remainingCapacity}h remaining)</p>`;
                 }
             }
             
             let itemsList = '<ul>';
-            selectedItems.forEach(item => {
-                itemsList += `<li>Item ${item.question}: ${item.hours === 'TBD' ? 'TBD' : item.hours + 'h'}</li>`;
+            awsData.selectedItems.forEach((item, index) => {
+                itemsList += `<li>${item.title}: ${item.estimatedHours === null ? 'TBD' : item.estimatedHours + 'h'}</li>`;
             });
             itemsList += '</ul>';
             
             resultMessage.innerHTML = `
                 <div class="success-header">
-                    <strong>✅ Thank you, ${email}! Your responses have been saved to the database successfully.</strong>
+                    <strong>✅ Thank you, ${awsData.email}! Your responses have been saved to the database successfully.</strong>
                     <p class="aws-success">🚀 Data saved to AWS at ${new Date().toLocaleString()}</p>
+                    <p class="aws-success">📊 Record ID: ${awsResponse.id}</p>
                 </div>
                 <div class="summary-section">
                     <h3>Selected Items Summary:</h3>
-                    <p><strong>Total items selected:</strong> ${selectedItems.length}</p>
+                    <p><strong>Total items selected:</strong> ${awsData.selectedItems.length}</p>
                     ${hoursText}
                     ${capacityInfo}
                     <h4>Selected Items:</h4>
