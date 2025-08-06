@@ -227,7 +227,7 @@ function createQuestionCard(question, questionNumber) {
                 <label class="checkbox-option">
                     <input type="checkbox" name="${question.id}_selected" value="${question.estimatedHours || 'TBD'}" 
                            ${question.required ? 'required' : ''} disabled>
-                    <span class="checkbox-label">✓ Selected - ${hoursText}</span>
+                    <span class="checkbox-label" id="checkbox-label-${question.id}">✓ Selected</span>
                 </label>
             </div>
         `;
@@ -803,6 +803,7 @@ function handleDropdownChange(dropdown) {
     const questionId = dropdown.name.replace('_priority', '');
     const checkboxSection = document.getElementById(`checkbox-${questionId}`);
     const checkbox = document.querySelector(`input[name="${questionId}_selected"]`);
+    const checkboxLabel = document.getElementById(`checkbox-label-${questionId}`);
     
     // Remove all priority classes
     dropdown.classList.remove('priority-high', 'priority-medium', 'priority-low');
@@ -815,6 +816,17 @@ function handleDropdownChange(dropdown) {
         checkboxSection.style.display = 'block';
         checkbox.checked = true;
         checkbox.disabled = false;
+        
+        // Update checkbox label based on priority
+        if (value === 'high') {
+            // Only show hours for high priority items
+            const hours = checkbox.value;
+            const hoursText = hours && hours !== 'TBD' ? `${hours} hours` : 'TBD';
+            checkboxLabel.textContent = `✓ Selected - ${hoursText}`;
+        } else {
+            // For medium and low priority, don't show hours
+            checkboxLabel.textContent = '✓ Selected';
+        }
         
         // Remove animation class after animation completes
         setTimeout(() => {
