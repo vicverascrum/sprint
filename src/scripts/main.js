@@ -19,12 +19,23 @@ async function loadQuestions() {
         questionsData = data;
         
         // Update form header
-        document.getElementById('form-title').textContent = data.formTitle;
+        const formTitleElement = document.getElementById('form-title');
+        if (formTitleElement) {
+            formTitleElement.textContent = data.formTitle;
+            // Ensure title is always centered
+            formTitleElement.style.textAlign = 'center';
+            formTitleElement.style.width = '100%';
+            formTitleElement.style.margin = '0 auto';
+        }
         
         // Update subtitle only if it exists and has content
         const subtitleElement = document.getElementById('form-subtitle');
         if (subtitleElement && data.subtitle && data.subtitle.trim() !== '') {
             subtitleElement.textContent = data.subtitle;
+            // Ensure subtitle is also centered
+            subtitleElement.style.textAlign = 'center';
+            subtitleElement.style.width = '100%';
+            subtitleElement.style.margin = '0 auto';
         } else if (subtitleElement) {
             subtitleElement.style.display = 'none';
         }
@@ -924,6 +935,7 @@ function showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, prio
             <div style="text-align: center; margin-bottom: 20px;">
                 <h3 style="margin: 0 0 8px 0;">✅ Thank you, ${email}!</h3>
                 <p style="margin: 0; color: #059669;">Your sprint prioritization has been submitted successfully.</p>
+                <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px;">Form will be cleared automatically in 5 seconds...</p>
             </div>
             
             ${dbStatusMessage}
@@ -962,6 +974,11 @@ function showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, prio
     
     resultMessage.classList.add('show');
     resultMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Auto-reset form after 5 seconds
+    setTimeout(() => {
+        resetForm();
+    }, 5000);
 }
 
 // Initialize everything when DOM is loaded
@@ -969,3 +986,109 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeStickyHeaders();
     loadQuestions();
 });
+
+function resetForm() {
+    const form = document.getElementById('survey-form');
+    const resultMessage = document.getElementById('result-message');
+    const floatingBtn = document.getElementById('floating-submit');
+    
+    // Hide result message with animation
+    if (resultMessage) {
+        resultMessage.classList.remove('show');
+        setTimeout(() => {
+            resultMessage.innerHTML = '';
+        }, 500);
+    }
+    
+    // Reset all form inputs
+    if (form) {
+        // Clear email input
+        const emailInput = form.querySelector('input[type="email"]');
+        if (emailInput) {
+            emailInput.value = '';
+        }
+        
+        // Reset all checkboxes and hide checkbox sections
+        const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            checkbox.disabled = true;
+            
+            // Hide checkbox section
+            const questionId = checkbox.name.replace('_selected', '');
+            const checkboxSection = document.getElementById(`checkbox-${questionId}`);
+            if (checkboxSection) {
+                checkboxSection.style.display = 'none';
+            }
+        });
+        
+        // Reset all dropdowns
+        const dropdowns = form.querySelectorAll('.dropdown-select');
+        dropdowns.forEach(dropdown => {
+            dropdown.value = '';
+            dropdown.classList.remove('priority-high', 'priority-medium', 'priority-low', 'selecting');
+        });
+    }
+    
+    // Reset floating button
+    if (floatingBtn) {
+        floatingBtn.disabled = false;
+        floatingBtn.style.opacity = '0.6';
+        floatingBtn.style.background = '';
+        floatingBtn.classList.remove('celebrate', 'pulse', 'over-capacity', 'high-hours');
+        
+        const btnText = floatingBtn.querySelector('.btn-text');
+        const btnIcon = floatingBtn.querySelector('.btn-icon');
+        if (btnText && btnIcon) {
+            btnText.textContent = 'Submit';
+            btnIcon.textContent = '📝';
+        }
+    }
+    
+    // Reset progress indicators
+    updateProgress();
+    
+    // Scroll to top of form smoothly
+    const formHeader = document.querySelector('.form-header');
+    if (formHeader) {
+        formHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    // Show a brief "Form Reset" notification
+    showResetNotification();
+}
+
+function showResetNotification() {
+    // Create a temporary notification
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        z-index: 10000;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+    `;
+    notification.textContent = '🔄 Form cleared - Ready for new response';
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Animate out and remove
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 2000);
+}
