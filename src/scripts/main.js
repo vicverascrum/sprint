@@ -79,18 +79,26 @@ function updateProgress() {
         answeredCount++;
     }
     
-    // Count checked checkboxes and calculate hours
+    // Count checked checkboxes and calculate hours (only HIGH priority items count towards capacity)
     let totalHours = 0;
     let itemsWithTBD = 0;
     
     checkboxes.forEach(checkbox => {
         if (checkbox.checked) {
             answeredCount++;
+            const questionId = checkbox.name.replace('_selected', '');
+            const priorityDropdown = document.querySelector(`select[name="${questionId}_priority"]`);
+            const priority = priorityDropdown ? priorityDropdown.value : '';
+            
             const hours = checkbox.value;
-            if (hours === 'TBD' || hours === null || hours === '') {
-                itemsWithTBD++;
-            } else if (!isNaN(hours)) {
-                totalHours += parseInt(hours);
+            
+            // Only count hours for HIGH priority items (Sprint 23)
+            if (priority === 'high') {
+                if (hours === 'TBD' || hours === null || hours === '') {
+                    itemsWithTBD++;
+                } else if (!isNaN(hours)) {
+                    totalHours += parseInt(hours);
+                }
             }
         }
     });
@@ -124,7 +132,7 @@ function updateProgress() {
         let counterText = '';
         
         if (totalHours === 0 && itemsWithTBD === 0) {
-            counterText = `<span class="capacity-label">Sprint Capacity:</span> 0h / ${CAPACITY_LIMIT}h (0%)`;
+            counterText = `<span class="capacity-label">Sprint 23 Capacity (High Priority):</span> 0h / ${CAPACITY_LIMIT}h (0%)`;
         } else {
             let hoursInfo = '';
             if (totalHours > 0) {
@@ -139,7 +147,7 @@ function updateProgress() {
             const capacityPercentage = Math.round((totalHours / CAPACITY_LIMIT) * 100);
             const remainingHours = Math.max(0, CAPACITY_LIMIT - totalHours);
             
-            counterText = `<span class="capacity-label">Sprint Capacity:</span> ${hoursInfo} / ${CAPACITY_LIMIT}h (${capacityPercentage}%) - ${remainingHours}h remaining`;
+            counterText = `<span class="capacity-label">Sprint 23 Capacity (High Priority):</span> ${hoursInfo} / ${CAPACITY_LIMIT}h (${capacityPercentage}%) - ${remainingHours}h remaining`;
         }
         
         // Set the base text first
@@ -572,7 +580,7 @@ function updateFloatingButton() {
     const checkboxes = form.querySelectorAll('input[type="checkbox"]');
     const checkedBoxes = form.querySelectorAll('input[type="checkbox"]:checked');
     
-    // Calculate total hours and check priorities
+    // Calculate total hours and check priorities (only HIGH priority items count towards capacity)
     let totalHours = 0;
     let itemsWithTBD = 0;
     let allHavePriority = true;
@@ -585,11 +593,16 @@ function updateFloatingButton() {
             allHavePriority = false;
         }
         
+        const priority = priorityDropdown ? priorityDropdown.value : '';
         const hours = checkbox.value;
-        if (hours === 'TBD' || hours === null || hours === '') {
-            itemsWithTBD++;
-        } else if (!isNaN(hours)) {
-            totalHours += parseInt(hours);
+        
+        // Only count hours for HIGH priority items (Sprint 23)
+        if (priority === 'high') {
+            if (hours === 'TBD' || hours === null || hours === '') {
+                itemsWithTBD++;
+            } else if (!isNaN(hours)) {
+                totalHours += parseInt(hours);
+            }
         }
     });
     
