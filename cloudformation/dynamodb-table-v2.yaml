@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Enhanced DynamoDB table for Sprint Prioritization with Priority tracking'
+
+Resources:
+  SprintPrioritizationTableV2:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: sprint-prioritization-v2
+      BillingMode: PAY_PER_REQUEST
+      
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+        - AttributeName: formVersionSprintNumber
+          AttributeType: S
+        - AttributeName: totalPointsRange
+          AttributeType: S
+        - AttributeName: priorityProfile
+          AttributeType: S
+        - AttributeName: totalPoints
+          AttributeType: N
+      
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      
+      GlobalSecondaryIndexes:
+        - IndexName: FormVersionSprintIndex
+          KeySchema:
+            - AttributeName: formVersionSprintNumber
+              KeyType: HASH
+            - AttributeName: totalPoints
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+            
+        - IndexName: PriorityProfileIndex
+          KeySchema:
+            - AttributeName: priorityProfile
+              KeyType: HASH
+            - AttributeName: totalPoints
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+            
+        - IndexName: PointsRangeIndex
+          KeySchema:
+            - AttributeName: totalPointsRange
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+        
+      Tags:
+        - Key: Environment
+          Value: Production
+        - Key: Application
+          Value: SprintPrioritization
+        - Key: Version
+          Value: v2.0-with-priority
+
+Outputs:
+  TableName:
+    Description: Name of the enhanced DynamoDB table
+    Value: !Ref SprintPrioritizationTableV2
+    Export:
+      Name: !Sub "${AWS::StackName}-TableName"
+      
+  TableArn:
+    Description: ARN of the enhanced DynamoDB table
+    Value: !GetAtt SprintPrioritizationTableV2.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-TableArn"
+      
+  StreamArn:
+    Description: Stream ARN of the enhanced DynamoDB table
+    Value: !GetAtt SprintPrioritizationTableV2.StreamArn
+    Export:
+      Name: !Sub "${AWS::StackName}-StreamArn"

@@ -16,7 +16,46 @@ async function submitToAWS(formData) {
     const url = AWS_CONFIG.API_BASE_URL + AWS_CONFIG.SUBMIT_ENDPOINT;
     
     try {
-        console.log('Sending data to AWS:', formData);
+        // Prepare enhanced data structure with priorities
+        const submissionData = {
+            email: formData.email,
+            submissionDate: new Date().toISOString(),
+            selectedItems: formData.selectedItems || [],
+            totalHours: formData.totalHours || 0,
+            itemsWithTBD: formData.itemsWithTBD || 0,
+            capacityUsed: formData.capacityUsed || 0,
+            
+            // NEW: Priority data
+            priorityBreakdown: formData.priorityCount || { high: 0, medium: 0, low: 0 },
+            highPriorityCount: (formData.priorityCount && formData.priorityCount.high) || 0,
+            mediumPriorityCount: (formData.priorityCount && formData.priorityCount.medium) || 0,
+            lowPriorityCount: (formData.priorityCount && formData.priorityCount.low) || 0,
+            totalPoints: formData.totalPoints || 0,
+            
+            responses: formData.responses || {},
+            timestamp: new Date().toISOString(),
+            formVersion: "v2.0-with-priority",
+            
+            // Enhanced metadata
+            sprintNumber: 23,
+            summary: {
+                totalItems: formData.selectedItems ? formData.selectedItems.length : 0,
+                itemsWithTBD: formData.itemsWithTBD || 0,
+                capacityUsed: formData.capacityUsed || 0,
+                remainingCapacity: Math.max(0, 260 - (formData.totalHours || 0)),
+                isOverCapacity: (formData.totalHours || 0) > 260,
+                priorityDistribution: formData.priorityCount || { high: 0, medium: 0, low: 0 }
+            },
+            metadata: {
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+                formVersion: "v2.0-with-priority",
+                hasValidPriorities: (formData.priorityCount && 
+                    (formData.priorityCount.high > 0 || formData.priorityCount.medium > 0 || formData.priorityCount.low > 0))
+            }
+        };
+
+        console.log('Submitting to AWS with priority data:', submissionData);
         
         const response = await fetch(url, {
             method: 'POST',
@@ -24,7 +63,7 @@ async function submitToAWS(formData) {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify(formData)
+            body: JSON.stringify(submissionData)
         });
         
         console.log('AWS Response status:', response.status);
@@ -98,6 +137,8 @@ function prepareFormDataForAWS(formData, questions) {
     const selectedItems = [];
     let totalHours = 0;
     let itemsWithTBD = 0;
+    let priorityCount = { high: 0, medium: 0, low: 0 };
+    let totalPoints = 0;
     
     questions.forEach(question => {
         if (question.type === 'checkbox') {
@@ -119,6 +160,16 @@ function prepareFormDataForAWS(formData, questions) {
                 } else {
                     totalHours += question.estimatedHours;
                 }
+            }
+        } else if (question.type === 'priority') {
+            const priorityValue = formData.get(question.id);
+            if (priorityValue) {
+                priorityCount[priorityValue]++;
+            }
+        } else if (question.type === 'points') {
+            const pointsValue = parseInt(formData.get(question.id), 10);
+            if (!isNaN(pointsValue)) {
+                totalPoints += pointsValue;
             }
         }
     });
@@ -146,7 +197,9 @@ function prepareFormDataForAWS(formData, questions) {
             userAgent: navigator.userAgent,
             timestamp: timestamp,
             formVersion: '1.0.0'
-        }
+        },
+        priorityCount: priorityCount,
+        totalPoints: totalPoints
     };
 }
 
