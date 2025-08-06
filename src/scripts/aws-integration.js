@@ -152,16 +152,49 @@ function prepareFormDataForAWS(formData, questions) {
  * @returns {Promise<boolean>} - True if connection is successful
  */
 async function testAWSConnection() {
+    console.log('🧪 Starting AWS connection test...');
+    
     try {
         const testData = {
-            test: true,
-            timestamp: new Date().toISOString()
+            email: 'connection-test@foundever.com',
+            selectedItems: [
+                {
+                    id: 'test-connection',
+                    title: 'AWS Connection Test',
+                    estimatedHours: 1
+                }
+            ],
+            totalHours: 1,
+            submissionDate: new Date().toISOString(),
+            sprintNumber: 23,
+            summary: {
+                totalItems: 1,
+                itemsWithTBD: 0,
+                capacityUsed: 0,
+                remainingCapacity: 259,
+                isOverCapacity: false
+            },
+            metadata: {
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString(),
+                formVersion: '1.0.0',
+                testConnection: true
+            }
         };
         
-        await submitToAWS(testData);
+        console.log('📤 Test data prepared:', testData);
+        console.log('🌐 Sending to:', AWS_CONFIG.API_BASE_URL + AWS_CONFIG.SUBMIT_ENDPOINT);
+        
+        const response = await submitToAWS(testData);
+        console.log('✅ Connection test successful:', response);
         return true;
     } catch (error) {
-        console.error('AWS Connection test failed:', error);
+        console.error('❌ AWS Connection test failed:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
         return false;
     }
 }
