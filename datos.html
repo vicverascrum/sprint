@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datos del Formulario</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #0066cc;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .stats {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .stats h3 {
+            margin: 0;
+            color: #0066cc;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th {
+            background-color: #0066cc;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        tr:hover {
+            background-color: #f0f8ff;
+        }
+        
+        .email {
+            font-weight: bold;
+            color: #0066cc;
+        }
+        
+        .hours {
+            background: #ff9933;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-block;
+        }
+        
+        .date {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .items {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .item {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #ffe6e6;
+            color: #cc0000;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .refresh-btn {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        
+        .refresh-btn:hover {
+            background: #0052a3;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Datos del Formulario Sprint</h1>
+        
+        <button class="refresh-btn" onclick="cargarDatos()">🔄 Actualizar Datos</button>
+        
+        <div class="stats" id="estadisticas">
+            <h3>Cargando estadísticas...</h3>
+        </div>
+        
+        <div id="contenido">
+            <div class="loading">Cargando datos...</div>
+        </div>
+    </div>
+
+    <script>
+        async function cargarDatos() {
+            const contenido = document.getElementById('contenido');
+            const estadisticas = document.getElementById('estadisticas');
+            
+            contenido.innerHTML = '<div class="loading">Cargando datos...</div>';
+            estadisticas.innerHTML = '<h3>Cargando estadísticas...</h3>';
+            
+            try {
+                const response = await fetch('https://dubo90gxce.execute-api.us-east-1.amazonaws.com/prod/query');
+                const data = await response.json();
+                
+                if (data.success && data.submissions) {
+                    mostrarEstadisticas(data.submissions);
+                    mostrarTabla(data.submissions);
+                } else {
+                    throw new Error('No se pudieron cargar los datos');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                contenido.innerHTML = '<div class="error">❌ Error al cargar los datos. Intenta de nuevo.</div>';
+                estadisticas.innerHTML = '<h3 style="color: #cc0000;">Error al cargar estadísticas</h3>';
+            }
+        }
+        
+        function mostrarEstadisticas(submissions) {
+            const total = submissions.length;
+            const totalHoras = submissions.reduce((sum, s) => sum + s.totalHours, 0);
+            const promedio = total > 0 ? Math.round(totalHoras / total) : 0;
+            
+            document.getElementById('estadisticas').innerHTML = `
+                <h3>📊 Resumen: ${total} formularios enviados | ${totalHoras} horas totales | ${promedio} horas promedio</h3>
+            `;
+        }
+        
+        function mostrarTabla(submissions) {
+            const contenido = document.getElementById('contenido');
+            
+            if (submissions.length === 0) {
+                contenido.innerHTML = '<div class="no-data">📭 No hay datos aún</div>';
+                return;
+            }
+            
+            let tabla = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>📧 Email</th>
+                            <th>⏱️ Horas</th>
+                            <th>📅 Fecha</th>
+                            <th>📝 Items Seleccionados</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            submissions.forEach((submission, index) => {
+                const fecha = new Date(submission.submittedAt).toLocaleString('es-ES');
+                const items = submission.selections.map(item => 
+                    `• ${item.questionTitle} (${item.estimatedHours}h)`
+                ).join('<br>');
+                
+                tabla += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td class="email">${submission.email}</td>
+                        <td><span class="hours">${submission.totalHours}h</span></td>
+                        <td class="date">${fecha}</td>
+                        <td class="items">${items}</td>
+                    </tr>
+                `;
+            });
+            
+            tabla += `
+                    </tbody>
+                </table>
+            `;
+            
+            contenido.innerHTML = tabla;
+        }
+        
+        // Cargar datos cuando se abre la página
+        document.addEventListener('DOMContentLoaded', cargarDatos);
+        
+        // Auto-actualizar cada 2 minutos
+        setInterval(cargarDatos, 120000);
+    </script>
+</body>
+</html>
