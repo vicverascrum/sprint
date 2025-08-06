@@ -1,6 +1,7 @@
 // This file contains the JavaScript code for the survey form logic.
 
 let questionsLoaded = false; // Flag to prevent multiple loads
+let questionsData = null; // Store questions data globally for access during submit
 
 async function loadQuestions() {
     if (questionsLoaded) return; // Prevent multiple loads
@@ -13,6 +14,9 @@ async function loadQuestions() {
         }
         
         const data = await response.json();
+        
+        // Store questions data globally for access during submit
+        questionsData = data;
         
         // Update form header
         document.getElementById('form-title').textContent = data.formTitle;
@@ -235,7 +239,22 @@ function createQuestionCard(question, questionNumber) {
 }
 
 function loadStaticQuestions() {
-    // Fallback static content
+    // Fallback static content with basic question data
+    questionsData = {
+        questions: [
+            {
+                id: "email",
+                type: "email",
+                title: "Email address"
+            },
+            {
+                id: "question1",
+                type: "checkbox", 
+                title: "Sample question for testing purposes"
+            }
+        ]
+    };
+    
     const container = document.getElementById('questions-container');
     container.innerHTML = `
         <div class="question-card">
@@ -358,35 +377,22 @@ function initializeForm(totalQuestions) {
             
             const hours = checkbox.value || 'TBD';
             const priority = priorityDropdown.value;
-            const questionCard = checkbox.closest('.question-card');
-            const questionNumberElement = questionCard?.querySelector('.question-number');
-            const questionNumber = questionNumberElement ? questionNumberElement.textContent.trim() : 'Unknown';
             
-            // Debug logging
-            console.log('Debug item data:', {
-                hours: hours,
+            // Find the question data to get the title
+            const questionData = questionsData?.questions.find(q => q.id === questionId);
+            const baseQuestionTitle = questionData?.title || 'Question not found';
+            
+            // Concatenate priority with question title
+            const priorityLabel = priority === 'high' ? 'HIGH PRIORITY' : priority === 'medium' ? 'MEDIUM PRIORITY' : 'LOW PRIORITY';
+            const questionTitle = `${baseQuestionTitle} - ${priorityLabel}`;
+            
+            // Include question title with priority, and hours
+            selectedItems.push({
+                questionId: questionId,
+                questionTitle: questionTitle,
                 priority: priority,
-                questionNumber: questionNumber,
-                questionCard: questionCard,
-                checkboxValue: checkbox.value,
-                checkboxName: checkbox.name
+                hours: hours
             });
-            
-            // Ensure we have valid data before adding to selectedItems
-            if (questionNumber !== 'Unknown' && priority && hours) {
-                selectedItems.push({
-                    questionNumber: parseInt(questionNumber) || 0,
-                    priority: priority,
-                    hours: hours
-                });
-            } else {
-                console.error('Invalid item data detected:', {
-                    questionNumber,
-                    priority,
-                    hours,
-                    checkbox: checkbox
-                });
-            }
             
             // Add to responses object
             responses[`${questionId}_selected`] = hours;
@@ -434,7 +440,6 @@ function initializeForm(totalQuestions) {
         };
         
         console.log('Form submitted with enhanced priority data:', submissionData);
-        console.log('Selected items before success message:', selectedItems);
         
         // Show loading state
         updateSubmitButtonLoading(true);
@@ -828,31 +833,22 @@ function updateSubmitButtonLoading(isLoading) {
 function showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, priorityCount, totalPoints, savedToDatabase = true, error = null) {
     const resultMessage = document.getElementById('result-message');
     
-    // Debug logging to see what data we're working with
-    console.log('Success message data:', {
-        email,
-        selectedItems,
-        totalHours,
-        itemsWithTBD,
-        priorityCount,
-        totalPoints
-    });
-    
     // Create detailed items list with priorities
     let itemsList = '<div class="items-grid" style="display: grid; gap: 8px; margin: 12px 0;">';
     selectedItems.forEach((item, index) => {
-        // Handle potential undefined values with fallbacks
-        const questionNumber = item?.questionNumber || (index + 1);
-        const priority = item?.priority || 'unknown';
-        const hours = item?.hours || 'TBD';
+        // Use question title that already includes priority
+        const questionTitle = item.questionTitle || 'Unknown Question';
+        const hours = item.hours || 'TBD';
+        const priority = item.priority || 'unknown';
         
-        const priorityEmoji = priority === 'high' ? '🔴' : priority === 'medium' ? '🟡' : priority === 'low' ? '🟢' : '⚪';
-        const priorityLabel = priority === 'high' ? 'High' : priority === 'medium' ? 'Medium' : priority === 'low' ? 'Low' : 'Unknown';
         const borderColor = priority === 'high' ? '#dc2626' : priority === 'medium' ? '#f59e0b' : priority === 'low' ? '#059669' : '#6b7280';
+        
+        // Truncate very long titles for display
+        const displayTitle = questionTitle.length > 120 ? questionTitle.substring(0, 120) + '...' : questionTitle;
         
         itemsList += `
             <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid ${borderColor};">
-                <strong>${priorityEmoji} Question ${questionNumber} - ${priorityLabel} Priority</strong><br>
+                <div style="margin-bottom: 4px; color: #374151; font-size: 14px; font-weight: 500;">${displayTitle}</div>
                 <small style="color: #6b7280;">${hours} hours</small>
             </div>
         `;
