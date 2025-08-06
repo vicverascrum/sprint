@@ -190,25 +190,27 @@ function createQuestionCard(question, questionNumber) {
         
         cardHTML += `
             ${devFeedbackHTML}
-            <div class="checkbox-group">
-                <label class="checkbox-option">
-                    <input type="checkbox" name="${question.id}_selected" value="${question.estimatedHours || 'TBD'}" 
-                           ${question.required ? 'required' : ''}>
-                    <span class="checkbox-label">${hoursText}</span>
-                </label>
-            </div>
             
-            <!-- Add priority dropdown when item is selected -->
-            <div class="priority-section" id="priority-${question.id}" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e8eaed;">
+            <!-- Priority selection first -->
+            <div class="priority-section" id="priority-${question.id}">
                 <label class="priority-label">Select Priority for this item:</label>
                 <div class="dropdown-group">
-                    <select class="dropdown-select priority-dropdown" name="${question.id}_priority" disabled>
+                    <select class="dropdown-select priority-dropdown" name="${question.id}_priority">
                         <option value="" disabled selected>Select Priority</option>
                         <option value="high">🔴 High Priority</option>
                         <option value="medium">🟡 Medium Priority</option>
                         <option value="low">🟢 Low Priority</option>
                     </select>
                 </div>
+            </div>
+            
+            <!-- Checkbox gets checked automatically when priority is selected -->
+            <div class="checkbox-group" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e8eaed; display: none;" id="checkbox-${question.id}">
+                <label class="checkbox-option">
+                    <input type="checkbox" name="${question.id}_selected" value="${question.estimatedHours || 'TBD'}" 
+                           ${question.required ? 'required' : ''} disabled>
+                    <span class="checkbox-label">✓ Selected - ${hoursText}</span>
+                </label>
             </div>
         `;
     } else if (question.type === 'radio') {
@@ -323,11 +325,9 @@ function initializeForm(totalQuestions) {
     // Initialize floating button
     initializeFloatingButton(floatingBtn);
     
-    // Add change listeners for both checkboxes, dropdowns, and progress tracking
+    // Add change listeners for dropdowns and progress tracking
     form.addEventListener('change', function(e) {
-        if (e.target.type === 'checkbox') {
-            handleCheckboxChange(e.target);
-        } else if (e.target.classList.contains('dropdown-select')) {
+        if (e.target.classList.contains('dropdown-select')) {
             handleDropdownChange(e.target);
         }
         updateProgress();
@@ -773,28 +773,11 @@ function initializeStickyHeaders() {
     });
 }
 
-function handleCheckboxChange(checkbox) {
-    const questionId = checkbox.name.replace('_selected', '');
-    const prioritySection = document.getElementById(`priority-${questionId}`);
-    const priorityDropdown = document.querySelector(`select[name="${questionId}_priority"]`);
-    
-    if (checkbox.checked) {
-        // Show priority section and enable dropdown
-        prioritySection.style.display = 'block';
-        priorityDropdown.disabled = false;
-        priorityDropdown.required = true;
-    } else {
-        // Hide priority section and disable dropdown
-        prioritySection.style.display = 'none';
-        priorityDropdown.disabled = true;
-        priorityDropdown.required = false;
-        priorityDropdown.value = '';
-        handleDropdownChange(priorityDropdown); // Reset styling
-    }
-}
-
 function handleDropdownChange(dropdown) {
     const value = dropdown.value;
+    const questionId = dropdown.name.replace('_priority', '');
+    const checkboxSection = document.getElementById(`checkbox-${questionId}`);
+    const checkbox = document.querySelector(`input[name="${questionId}_selected"]`);
     
     // Remove all priority classes
     dropdown.classList.remove('priority-high', 'priority-medium', 'priority-low');
@@ -803,10 +786,20 @@ function handleDropdownChange(dropdown) {
     if (value) {
         dropdown.classList.add(`priority-${value}`, 'selecting');
         
+        // Show checkbox section and automatically check it
+        checkboxSection.style.display = 'block';
+        checkbox.checked = true;
+        checkbox.disabled = false;
+        
         // Remove animation class after animation completes
         setTimeout(() => {
             dropdown.classList.remove('selecting');
         }, 300);
+    } else {
+        // If no priority selected, hide and uncheck checkbox
+        checkboxSection.style.display = 'none';
+        checkbox.checked = false;
+        checkbox.disabled = true;
     }
 }
 
