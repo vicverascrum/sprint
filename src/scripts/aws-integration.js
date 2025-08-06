@@ -101,7 +101,10 @@ function prepareFormDataForAWS(formData, questions) {
     
     questions.forEach(question => {
         if (question.type === 'checkbox') {
-            const isSelected = formData.get(question.id) === 'on';
+            const checkboxValue = formData.get(question.id);
+            // Check if checkbox is selected (any value means it's checked)
+            const isSelected = checkboxValue !== null && checkboxValue !== '';
+            
             if (isSelected) {
                 const item = {
                     id: question.id,

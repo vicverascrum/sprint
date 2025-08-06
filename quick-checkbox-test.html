@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Checkbox Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Quick Checkbox Test</h1>
+    
+    <form id="test-form">
+        <label><input type="checkbox" name="question1" value="24" checked> Question 1 (value="24")</label><br>
+        <label><input type="checkbox" name="question2" checked> Question 2 (no value - should be "on")</label><br>
+        <label><input type="checkbox" name="question3" value="8"> Question 3 (unchecked)</label><br>
+        <input type="email" name="email" value="test@example.com">
+    </form>
+    
+    <button onclick="testCheckboxDetection()">Test Checkbox Detection</button>
+    
+    <div id="results"></div>
+
+    <script src="config.js"></script>
+    <script src="src/scripts/aws-integration.js"></script>
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        function testCheckboxDetection() {
+            const form = document.getElementById('test-form');
+            const formData = new FormData(form);
+            
+            addResult('<h3>🔍 FormData Analysis:</h3>', 'info');
+            
+            for (let [key, value] of formData.entries()) {
+                addResult(`${key}: "${value}"`, 'info');
+            }
+            
+            // Test the detection logic
+            addResult('<h3>🧪 Detection Logic Test:</h3>', 'info');
+            
+            ['question1', 'question2', 'question3'].forEach(questionId => {
+                const checkboxValue = formData.get(questionId);
+                const isSelected = checkboxValue !== null && checkboxValue !== '';
+                
+                addResult(`${questionId}: value="${checkboxValue}" → ${isSelected ? '✅ SELECTED' : '❌ NOT SELECTED'}`, 
+                         isSelected ? 'success' : 'error');
+            });
+            
+            // Test with mock questions
+            const mockQuestions = [
+                { id: 'question1', type: 'checkbox', title: 'Question 1', estimatedHours: 24 },
+                { id: 'question2', type: 'checkbox', title: 'Question 2', estimatedHours: 8 },
+                { id: 'question3', type: 'checkbox', title: 'Question 3', estimatedHours: 4 }
+            ];
+            
+            addResult('<h3>🚀 prepareFormDataForAWS Test:</h3>', 'info');
+            
+            try {
+                const awsData = window.AWSIntegration.prepareFormDataForAWS(formData, mockQuestions);
+                addResult(`✅ selectedItems: ${awsData.selectedItems.length} items`, 
+                         awsData.selectedItems.length > 0 ? 'success' : 'error');
+                addResult(`✅ totalHours: ${awsData.totalHours}h`, 'success');
+                addResult(`✅ email: ${awsData.email}`, 'success');
+                
+                awsData.selectedItems.forEach(item => {
+                    addResult(`   - ${item.title}: ${item.estimatedHours}h`, 'info');
+                });
+                
+            } catch (error) {
+                addResult(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
