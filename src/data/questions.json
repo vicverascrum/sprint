@@ -1,0 +1,76 @@
+{
+  "formTitle": "Prioritization for Sprint 23",
+  "subtitle": "",
+  "questions": [
+    {
+      "id": "email",
+      "type": "email",
+      "title": "Email address *",
+      "placeholder": "Your email",
+      "required": true
+    },
+    {
+      "id": "question1",
+      "type": "checkbox",
+      "title": "The Associate Evaluation form should include dates below each score field, similar to how On-the-Job Training (OJT) evaluations are structured. Additionally, it should ensure that users complete the evaluation within the specified time frame; if not, the corresponding score fields should be grayed out to indicate incomplete or overdue status. This feature helps in maintaining a timely and accurate evaluation process.",
+      "estimatedHours": 24,
+      "required": false
+    },
+    {
+      "id": "question2",
+      "type": "checkbox",
+      "title": "The feedback pointers such as strengths, opportunities, and best practices/resources should be included in the exported observation form report.",
+      "estimatedHours": 4,
+      "required": false
+    },
+    {
+      "id": "question3",
+      "type": "checkbox",
+      "title": "The feature request involves adding a visual button, either in red or green, to help learning specialists easily identify which audits or observations are pending acknowledgment. This color-coding system will make it quicker and more intuitive for them to distinguish between tasks that need attention and those that have been acknowledged, thereby streamlining the acknowledgment process and improving overall efficiency.",
+      "estimatedHours": 4,
+      "required": false
+    },
+    {
+      "id": "question4",
+      "type": "checkbox",
+      "title": "The system should automatically generate communication emails based on inputs provided. For instance, if a user enters \"NCNS\" in an attendance entry, the system should prompt a pop-up asking if they want to trigger an email to the respective learner. The pop-up should offer two options: \"Send Email\" and \"Cancel.\" Upon selection, a success message should appear, confirming the action was successful.",
+      "estimatedHours": 16,
+      "required": false
+    },
+    {
+      "id": "question5",
+      "type": "checkbox",
+      "title": "To address this requirement, we need to add functionality that allows users to type \"NA\" in the OJT KPI fields to clarify whether the absence of results is due to no surveys being received, non-compliance from the trainer, or a zero percentage score. For instance, if a learner did not receive CSAT surveys on April 28th, typing \"NA\" would indicate that no surveys were received that day. Leaving the field blank could lead to confusion regarding the reason for the lack of data, while entering \"0%\" would skew the learner's average performance. This feature will help ensure accurate and transparent tracking of learner progress and compliance.",
+      "estimatedHours": null,
+      "required": false
+    },
+    {
+      "id": "question6",
+      "type": "checkbox",
+      "title": "When a user creates a class but removes a learner, the class gets canceled in the system. Currently, there is no status for canceled classes, which can cause confusion. To address this, we propose introducing a new class status labeled \"Cancelled\" or another appropriate term to clearly indicate that the class has been canceled. This will help users better understand the status of the class and manage their records more effectively.",
+      "estimatedHours": 20,
+      "required": false
+    },
+    {
+      "id": "question7",
+      "type": "checkbox",
+      "title": "After updating the logic for STAR upon graduation or termination, we are experiencing issues where the entire history is not visible. While we are fine with blocking edits, we would like to be able to view the full history of the STAR updates. This will help us ensure transparency and maintain a complete record of all changes made to the STAR data.",
+      "estimatedHours": 6,
+      "required": false
+    },
+    {
+      "id": "question8",
+      "type": "checkbox",
+      "title": "Admin should have the capability to edit the Employee ID (ECN) of learners individually and through a bulk uploader option. This feature allows admin's to manually update the ECN in the learner files one by one or upload multiple updates simultaneously. These updates should be restricted to admin users only to maintain data integrity and security.",
+      "estimatedHours": 48,
+      "required": false
+    },
+    {
+      "id": "question9",
+      "type": "checkbox",
+      "title": "OJT - Revamp",
+      "estimatedHours": 200,
+      "required": false
+    }
+  ]
+}

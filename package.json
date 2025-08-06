@@ -1,0 +1,31 @@
+{
+  "name": "web-survey-form",
+  "version": "1.0.0",
+  "description": "A simple web survey form with a scoring system for Sprint prioritization.",
+  "main": "index.html",
+  "scripts": {
+    "start": "live-server . --port=8080 --open=/index.html",
+    "dev": "live-server . --port=8080 --open=/index.html --watch=src",
+    "validate": "node validate-json.js",
+    "build": "echo 'Building project...' && npm run validate",
+    "test": "npm run validate && echo 'All tests passed!'"
+  },
+  "keywords": [
+    "survey",
+    "form",
+    "web",
+    "javascript",
+    "sprint",
+    "prioritization"
+  ],
+  "author": "Victor Vera",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "live-server": "^1.2.1"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  }
+}

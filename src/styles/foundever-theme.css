@@ -1,0 +1,512 @@
+/* Foundever Corporate Theme */
+
+/* Foundever Color Palette */
+:root {
+    /* Primary Colors */
+    --foundever-primary: #0066CC;
+    --foundever-primary-dark: #004499;
+    --foundever-primary-light: #3385D6;
+    
+    /* Secondary Colors */
+    --foundever-secondary: #FF6B35;
+    --foundever-secondary-dark: #E55A2B;
+    --foundever-secondary-light: #FF8A5C;
+    
+    /* Accent Colors */
+    --foundever-accent-green: #00B894;
+    --foundever-accent-purple: #6C5CE7;
+    --foundever-accent-yellow: #FDCB6E;
+    
+    /* Neutral Colors */
+    --foundever-dark: #2D3436;
+    --foundever-gray: #636E72;
+    --foundever-light-gray: #DDD;
+    --foundever-bg-light: #F8F9FA;
+    --foundever-white: #FFFFFF;
+    
+    /* Status Colors */
+    --foundever-success: #00B894;
+    --foundever-warning: #FDCB6E;
+    --foundever-error: #E17055;
+    --foundever-info: #74B9FF;
+    
+    /* Typography */
+    --foundever-font-primary: 'Inter', 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    --foundever-font-secondary: 'Arial', sans-serif;
+    
+    /* Spacing */
+    --foundever-spacing-xs: 4px;
+    --foundever-spacing-sm: 8px;
+    --foundever-spacing-md: 16px;
+    --foundever-spacing-lg: 24px;
+    --foundever-spacing-xl: 32px;
+    
+    /* Border Radius */
+    --foundever-radius-sm: 4px;
+    --foundever-radius-md: 8px;
+    --foundever-radius-lg: 12px;
+    --foundever-radius-xl: 16px;
+    
+    /* Shadows */
+    --foundever-shadow-sm: 0 2px 4px rgba(45, 52, 54, 0.1);
+    --foundever-shadow-md: 0 4px 12px rgba(45, 52, 54, 0.15);
+    --foundever-shadow-lg: 0 8px 24px rgba(45, 52, 54, 0.2);
+}
+
+/* Foundever Brand Header */
+.foundever-brand {
+    background: linear-gradient(135deg, var(--foundever-dark) 0%, var(--foundever-gray) 100%);
+    padding: var(--foundever-spacing-md) 0;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.foundever-brand.scrolled {
+    padding: var(--foundever-spacing-sm) 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.foundever-brand.scrolled .brand-text {
+    font-size: 1.5rem;
+}
+
+.foundever-brand.scrolled .brand-tagline {
+    font-size: 0.8rem;
+}
+
+.foundever-brand::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+    opacity: 0.3;
+}
+
+.brand-logo {
+    position: relative;
+    z-index: 1;
+}
+
+.brand-text {
+    font-family: var(--foundever-font-primary);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--foundever-white);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: var(--foundever-spacing-xs);
+}
+
+.brand-tagline {
+    font-family: var(--foundever-font-primary);
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 400;
+    letter-spacing: 1px;
+}
+
+/* Global Foundever Styles */
+body {
+    font-family: var(--foundever-font-primary);
+    background: linear-gradient(135deg, var(--foundever-bg-light) 0%, #E8F4FD 100%);
+    color: var(--foundever-dark);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    padding-bottom: 100px; /* Space for floating button */
+}
+
+/* Foundever Header Styles */
+.form-header {
+    background: linear-gradient(135deg, var(--foundever-primary) 0%, var(--foundever-primary-dark) 100%);
+    color: var(--foundever-white);
+    padding: var(--foundever-spacing-md) 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0, 102, 204, 0.2);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.form-header > * {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 var(--foundever-spacing-xl);
+}
+
+.form-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(50%, -50%);
+}
+
+.form-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--foundever-white);
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1;
+}
+
+/* Foundever Container */
+.container {
+    max-width: 900px;
+    margin: 0 auto var(--foundever-spacing-lg);
+    background: var(--foundever-white);
+    border-radius: var(--foundever-radius-lg);
+    box-shadow: var(--foundever-shadow-lg);
+    overflow: hidden;
+    position: relative;
+}
+
+/* Foundever Question Cards */
+.question-card {
+    padding: var(--foundever-spacing-xl);
+    border-bottom: 1px solid var(--foundever-light-gray);
+    transition: all 0.3s ease;
+}
+
+.question-card:hover {
+    background: var(--foundever-bg-light);
+}
+
+.question-card:last-child {
+    border-bottom: none;
+}
+
+.question-number {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--foundever-primary) 0%, var(--foundever-primary-light) 100%);
+    color: var(--foundever-white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    box-shadow: var(--foundever-shadow-sm);
+    flex-shrink: 0;
+}
+
+.question-title {
+    font-size: 1.1rem;
+    color: var(--foundever-dark);
+    line-height: 1.5;
+    font-weight: 500;
+    margin-bottom: var(--foundever-spacing-lg);
+}
+
+/* Foundever Checkbox Styles */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--foundever-spacing-md);
+}
+
+.checkbox-option {
+    background: var(--foundever-white);
+    border: 2px solid var(--foundever-light-gray);
+    border-radius: var(--foundever-radius-md);
+    padding: var(--foundever-spacing-md) var(--foundever-spacing-lg);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--foundever-spacing-md);
+}
+
+.checkbox-option:hover {
+    border-color: var(--foundever-primary-light);
+    background: linear-gradient(135deg, #F8FCFF 0%, #F0F8FF 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--foundever-shadow-md);
+}
+
+.checkbox-option:has(input:checked) {
+    background: linear-gradient(135deg, var(--foundever-primary) 0%, var(--foundever-primary-dark) 100%);
+    border: 2px solid var(--foundever-primary-dark);
+    color: var(--foundever-white);
+    box-shadow: 
+        var(--foundever-shadow-lg),
+        0 0 0 2px rgba(0, 102, 204, 0.3);
+    transform: translateY(-1px);
+    position: relative;
+}
+
+.checkbox-option:has(input:checked)::before {
+    content: '✓';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.checkbox-option:has(input:checked) .checkbox-label {
+    color: var(--foundever-white) !important;
+    font-weight: 600 !important;
+    padding-right: 40px; /* Make space for the checkmark */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.checkbox-option:has(input:checked) input[type="checkbox"] {
+    transform: scale(1.1);
+    accent-color: white;
+}
+
+/* Override original styles with more specific selectors */
+.checkbox-option input[type="checkbox"]:checked + .checkbox-label {
+    color: var(--foundever-white) !important;
+    font-weight: 600 !important;
+}
+
+.checkbox-option:has(input:checked) {
+    color: var(--foundever-white) !important;
+}
+
+.checkbox-option:has(input:checked) * {
+    color: var(--foundever-white) !important;
+}
+
+.checkbox-option:has(input:checked):hover {
+    background: linear-gradient(135deg, var(--foundever-primary-dark) 0%, #003366 100%);
+    border-color: #003366;
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 25px rgba(0, 102, 204, 0.4),
+        0 0 0 2px rgba(0, 102, 204, 0.4);
+}
+
+.checkbox-option input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--foundever-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.checkbox-label {
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    flex: 1;
+}
+
+/* Foundever Progress Bar */
+.progress-bar {
+    background: var(--foundever-light-gray);
+    height: 8px;
+    border-radius: var(--foundever-radius-sm);
+    overflow: hidden;
+    margin-bottom: var(--foundever-spacing-lg);
+    position: relative;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, var(--foundever-primary) 0%, var(--foundever-secondary) 100%);
+    height: 100%;
+    border-radius: var(--foundever-radius-sm);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+    width: 0%;
+}
+
+.question-counter {
+    font-size: 0.95rem;
+    color: var(--foundever-white);
+    margin-bottom: var(--foundever-spacing-md);
+    font-weight: 600;
+    font-family: var(--foundever-font-primary);
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 1;
+}
+
+/* Sprint Capacity Label with white background */
+.capacity-label {
+    background: var(--foundever-white);
+    color: var(--foundever-primary);
+    padding: 4px 12px;
+    border-radius: var(--foundever-radius-md);
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    display: inline-block;
+    margin-right: 8px;
+    font-size: 0.9rem;
+    border: 2px solid var(--foundever-primary);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.capacity-label::before {
+    content: '📊';
+    margin-right: 4px;
+    font-size: 0.8rem;
+}
+
+/* Subtle animation effect */
+.capacity-label {
+    animation: subtle-pulse 3s ease-in-out infinite;
+}
+
+@keyframes subtle-pulse {
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+    50% { 
+        transform: scale(1.02);
+        box-shadow: 0 3px 8px rgba(0, 102, 204, 0.25);
+    }
+}
+
+/* Foundever Floating Button */
+.floating-submit-btn {
+    background: linear-gradient(135deg, var(--foundever-secondary) 0%, var(--foundever-secondary-dark) 100%);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        var(--foundever-shadow-lg),
+        0 0 0 0 rgba(255, 107, 53, 0.4);
+    font-family: var(--foundever-font-primary);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.floating-submit-btn:hover {
+    background: linear-gradient(135deg, var(--foundever-secondary-dark) 0%, #D4491F 100%);
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 
+        0 12px 32px rgba(255, 107, 53, 0.4),
+        0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Foundever Success Message */
+#result-message {
+    background: linear-gradient(135deg, #E8F5E8 0%, #D4F4DD 100%);
+    border: 2px solid var(--foundever-success);
+    border-radius: var(--foundever-radius-md);
+    color: var(--foundever-dark);
+    margin: var(--foundever-spacing-lg);
+}
+
+.success-header {
+    color: var(--foundever-success);
+    font-weight: 700;
+}
+
+/* Foundever Error Messages */
+.error-message {
+    background: linear-gradient(135deg, #FFE8E8 0%, #FFD6D6 100%);
+    border: 2px solid var(--foundever-error);
+    color: var(--foundever-error);
+    border-radius: var(--foundever-radius-md);
+    font-weight: 600;
+}
+
+/* Foundever Capacity Indicators */
+.capacity-ok {
+    color: var(--foundever-success);
+    font-weight: 600;
+}
+
+.capacity-near {
+    color: var(--foundever-warning);
+    font-weight: 600;
+}
+
+.capacity-warning {
+    color: var(--foundever-error);
+    font-weight: 700;
+}
+
+/* Foundever Disabled States */
+.checkbox-option.disabled {
+    background: #F5F5F5;
+    border-color: var(--foundever-light-gray);
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.checkbox-option.disabled:hover {
+    background: #F5F5F5;
+    border-color: var(--foundever-light-gray);
+    transform: none;
+    box-shadow: none;
+}
+
+.checkbox-option.disabled .checkbox-label {
+    color: var(--foundever-gray);
+    cursor: not-allowed;
+}
+
+.checkbox-option.disabled input[type="checkbox"] {
+    cursor: not-allowed;
+}
+
+/* Foundever Responsive Design */
+@media (max-width: 768px) {
+    .form-header {
+        padding: var(--foundever-spacing-sm) 0;
+    }
+    
+    .form-header > * {
+        padding: 0 var(--foundever-spacing-lg);
+    }
+    
+    .form-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .container {
+        margin: 0 var(--foundever-spacing-md) var(--foundever-spacing-lg);
+        border-radius: var(--foundever-radius-md);
+    }
+    
+    .question-card {
+        padding: var(--foundever-spacing-lg);
+        flex-direction: column;
+        gap: var(--foundever-spacing-md);
+    }
+    
+    .question-number {
+        align-self: flex-start;
+    }
+    
+    body {
+        padding-bottom: 120px; /* Space for floating button on mobile */
+    }
+}
