@@ -63,6 +63,16 @@ function addProgressIndicator(totalQuestions) {
     progressBar.className = 'progress-bar';
     progressBar.innerHTML = '<div class="progress-fill"></div>';
     header.appendChild(progressBar);
+    
+    // Add description below progress bar
+    const description = document.createElement('div');
+    description.className = 'form-description';
+    description.innerHTML = `
+        <p style="margin: 16px 0 0 0; color: white; font-size: 14px; line-height: 1.5; text-align: justify; max-width: 600px; margin: 16px auto 0 auto;">
+            This form will help you understand what we have in our wish list bucket, which is going to be included in the upcoming sprint. The purpose is to allow you to add your opinions based on priority so we can finalize the items.
+        </p>
+    `;
+    header.appendChild(description);
 }
 
 function updateProgress() {
@@ -72,7 +82,7 @@ function updateProgress() {
     
     let answeredCount = 0;
     const totalQuestions = checkboxes.length + 1; // +1 for email
-    const CAPACITY_LIMIT = 260;
+    const CAPACITY_LIMIT = 264;
     
     // Check email
     if (emailInput && emailInput.value.trim() !== '') {
@@ -168,7 +178,7 @@ function createQuestionCard(question, questionNumber) {
         <div class="question-number">${questionNumber}</div>
         <div class="question-content">
             <label class="question-title" ${question.type === 'email' ? `for="${question.id}"` : ''}>
-                ${question.title}
+                ${question.title}${question.type === 'checkbox' && question.estimatedHours ? ` (${question.estimatedHours}h)` : ''}${question.type === 'checkbox' && !question.estimatedHours ? ' (TBD)' : ''}
             </label>
     `;
     
@@ -423,7 +433,7 @@ function initializeForm(totalQuestions) {
         const totalPoints = (priorityCount.high * 30) + (priorityCount.medium * 20) + (priorityCount.low * 10);
         
         // Calculate capacity used
-        const CAPACITY_LIMIT = 260;
+        const CAPACITY_LIMIT = 264;
         const capacityUsed = Math.round((totalHours / CAPACITY_LIMIT) * 100);
         
         // Prepare enhanced submission data with priority information
@@ -606,8 +616,8 @@ function updateFloatingButton() {
         }
     });
     
-    // Check capacity limit (260 hours)
-    const CAPACITY_LIMIT = 260;
+    // Check capacity limit (264 hours)
+    const CAPACITY_LIMIT = 264;
     const isOverCapacity = totalHours > CAPACITY_LIMIT;
     
     // Update checkbox states based on capacity
@@ -846,7 +856,6 @@ function showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, prio
     selectedItems.forEach((item, index) => {
         // Use question title that already includes priority
         const questionTitle = item.questionTitle || 'Unknown Question';
-        const hours = item.hours || 'TBD';
         const priority = item.priority || 'unknown';
         
         const borderColor = priority === 'high' ? '#dc2626' : priority === 'medium' ? '#f59e0b' : priority === 'low' ? '#059669' : '#6b7280';
@@ -857,7 +866,6 @@ function showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, prio
         itemsList += `
             <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid ${borderColor};">
                 <div style="margin-bottom: 4px; color: #374151; font-size: 14px; font-weight: 500;">${displayTitle}</div>
-                <small style="color: #6b7280;">${hours} hours</small>
             </div>
         `;
     });
@@ -869,6 +877,34 @@ function showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, prio
         dbStatusMessage = '<div style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 12px; border-radius: 6px; margin: 12px 0;">💾 <strong>Successfully saved to database</strong></div>';
     } else {
         dbStatusMessage = `<div style="background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; padding: 12px; border-radius: 6px; margin: 12px 0;">⚠️ <strong>Saved locally</strong> - Database connection issue: ${error || 'Unknown error'}</div>`;
+    }
+    
+    // Calculate high priority hours for display
+    let highPriorityHours = 0;
+    let highPriorityTBD = 0;
+    
+    selectedItems.forEach(item => {
+        if (item.priority === 'high') {
+            const hours = item.hours;
+            if (hours === 'TBD' || hours === null || hours === '') {
+                highPriorityTBD++;
+            } else if (!isNaN(hours)) {
+                highPriorityHours += parseInt(hours);
+            }
+        }
+    });
+    
+    // Create time estimation section only if there are high priority items
+    let timeEstimationSection = '';
+    if (priorityCount.high > 0) {
+        timeEstimationSection = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px;">
+                <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #d1d5db;">
+                    <h5 style="margin: 0 0 8px 0; color: #374151;">⏱️ Sprint 23 Time Estimation (High Priority)</h5>
+                    <p style="margin: 0; font-size: 18px; font-weight: 600;">${highPriorityHours}h${highPriorityTBD > 0 ? ` + ${highPriorityTBD} TBD` : ''}</p>
+                </div>
+            </div>
+        `;
     }
     
     resultMessage.innerHTML = `
@@ -886,17 +922,7 @@ function showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, prio
                 </h4>
                 ${itemsList}
                 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px;">
-                    <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #d1d5db;">
-                        <h5 style="margin: 0 0 8px 0; color: #374151;">⏱️ Time Estimation</h5>
-                        <p style="margin: 0; font-size: 18px; font-weight: 600;">${totalHours}h${itemsWithTBD > 0 ? ` + ${itemsWithTBD} TBD` : ''}</p>
-                    </div>
-                    
-                    <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #d1d5db;">
-                        <h5 style="margin: 0 0 8px 0; color: #374151;">🎯 Priority Points</h5>
-                        <p style="margin: 0; font-size: 18px; font-weight: 600; color: #059669;">${totalPoints}</p>
-                    </div>
-                </div>
+                ${timeEstimationSection}
                 
                 <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #d1d5db; margin-top: 16px;">
                     <h5 style="margin: 0 0 12px 0; color: #374151;">📊 Priority Breakdown</h5>
