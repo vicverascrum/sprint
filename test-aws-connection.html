@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test AWS Connection - Sprint Prioritization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 AWS Connection Test</h1>
+        <p>Use this page to test the connection to your AWS Lambda function.</p>
+        
+        <div class="test-buttons">
+            <button onclick="testConnection()">Test Connection</button>
+            <button onclick="testSubmission()">Test Form Submission</button>
+            <button onclick="testQuery()">Test Query API</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script src="src/scripts/aws-integration.js"></script>
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        async function testConnection() {
+            addResult('Testing AWS connection...', 'info');
+            
+            try {
+                const isConnected = await window.AWSIntegration.testAWSConnection();
+                if (isConnected) {
+                    addResult('✅ AWS connection successful!', 'success');
+                } else {
+                    addResult('❌ AWS connection failed', 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Connection error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSubmission() {
+            addResult('Testing form submission...', 'info');
+            
+            const testData = {
+                email: 'test@foundever.com',
+                selectedItems: [
+                    {
+                        id: 'question1',
+                        title: 'Test item 1',
+                        estimatedHours: 24
+                    },
+                    {
+                        id: 'question2',
+                        title: 'Test item 2',
+                        estimatedHours: 4
+                    }
+                ],
+                totalHours: 28,
+                submissionDate: new Date().toISOString(),
+                sprintNumber: 23,
+                summary: {
+                    totalItems: 2,
+                    itemsWithTBD: 0,
+                    capacityUsed: 11,
+                    remainingCapacity: 232,
+                    isOverCapacity: false
+                },
+                metadata: {
+                    userAgent: navigator.userAgent,
+                    timestamp: new Date().toISOString(),
+                    formVersion: '1.0.0'
+                }
+            };
+
+            try {
+                const response = await window.AWSIntegration.submitToAWS(testData);
+                addResult(`✅ Submission successful! Response: ${JSON.stringify(response, null, 2)}`, 'success');
+            } catch (error) {
+                addResult(`❌ Submission failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testQuery() {
+            addResult('Testing query API...', 'info');
+            
+            try {
+                const response = await window.AWSIntegration.queryFromAWS();
+                addResult(`✅ Query successful! Response: ${JSON.stringify(response, null, 2)}`, 'success');
+            } catch (error) {
+                addResult(`❌ Query failed: ${error.message}`, 'error');
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Auto-test connection on page load
+        window.addEventListener('load', () => {
+            addResult('Page loaded. Ready for testing.', 'info');
+            addResult(`API Base URL: ${window.AWSIntegration.AWS_CONFIG.API_BASE_URL}`, 'info');
+        });
+    </script>
+</body>
+</html>

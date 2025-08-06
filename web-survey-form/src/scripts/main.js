@@ -1,12 +1,14 @@
 // This file contains the JavaScript code for the survey form logic.
 
+import SharePointIntegration from './sharepoint-integration.js';
+
 let questionsLoaded = false; // Flag to prevent multiple loads
 
 async function loadQuestions() {
     if (questionsLoaded) return; // Prevent multiple loads
     
     try {
-        const response = await fetch('data/questions.json');
+        const response = await fetch('src/data/questions.json');
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -101,21 +103,16 @@ function updateProgress() {
     
     // Update progress bar with capacity percentage
     if (progressFill) {
-        // Set the width based on capacity
         progressFill.style.width = `${capacityProgress}%`;
         
         // Change color based on capacity level
         if (totalHours > CAPACITY_LIMIT) {
-            // Over capacity - red
             progressFill.style.background = 'linear-gradient(90deg, #e74c3c 0%, #c0392b 100%)';
         } else if (totalHours > CAPACITY_LIMIT * 0.8) {
-            // Near capacity - orange
             progressFill.style.background = 'linear-gradient(90deg, #f39c12 0%, #e67e22 100%)';
         } else if (totalHours > CAPACITY_LIMIT * 0.5) {
-            // Medium capacity - yellow to orange
             progressFill.style.background = 'linear-gradient(90deg, #f1c40f 0%, #f39c12 100%)';
         } else {
-            // Low capacity - original blue to orange
             progressFill.style.background = 'linear-gradient(90deg, var(--foundever-primary) 0%, var(--foundever-secondary) 100%)';
         }
     }
@@ -125,7 +122,7 @@ function updateProgress() {
         let counterText = '';
         
         if (totalHours === 0 && itemsWithTBD === 0) {
-            counterText = `Sprint Capacity: 0h / ${CAPACITY_LIMIT}h (0%)`;
+            counterText = `<span class="capacity-label">Sprint Capacity:</span> 0h / ${CAPACITY_LIMIT}h (0%)`;
         } else {
             let hoursInfo = '';
             if (totalHours > 0) {
@@ -140,11 +137,11 @@ function updateProgress() {
             const capacityPercentage = Math.round((totalHours / CAPACITY_LIMIT) * 100);
             const remainingHours = Math.max(0, CAPACITY_LIMIT - totalHours);
             
-            counterText = `Sprint Capacity: ${hoursInfo} / ${CAPACITY_LIMIT}h (${capacityPercentage}%) - ${remainingHours}h remaining`;
+            counterText = `<span class="capacity-label">Sprint Capacity:</span> ${hoursInfo} / ${CAPACITY_LIMIT}h (${capacityPercentage}%) - ${remainingHours}h remaining`;
         }
         
         // Set the base text first
-        counter.textContent = counterText;
+        counter.innerHTML = counterText;
         
         // Then add capacity indicator if needed
         if (totalHours > 0) {
@@ -280,10 +277,13 @@ function showError(message) {
     }, 5000);
 }
 
-function initializeForm(totalQuestions) {
+async function initializeForm(totalQuestions) {
     const form = document.getElementById('survey-form');
     const resultMessage = document.getElementById('result-message');
     const floatingBtn = document.getElementById('floating-submit');
+    
+    // Initialize SharePoint integration
+    const sharePointIntegration = new SharePointIntegration();
     
     // Initialize floating button
     initializeFloatingButton(floatingBtn);
@@ -292,7 +292,7 @@ function initializeForm(totalQuestions) {
     form.addEventListener('change', updateProgress);
     form.addEventListener('input', updateProgress);
     
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const formData = new FormData(form);
@@ -320,11 +320,14 @@ function initializeForm(totalQuestions) {
         checkboxes.forEach(checkbox => {
             const questionCard = checkbox.closest('.question-card');
             const questionNumber = questionCard.querySelector('.question-number').textContent;
+            const questionTitle = questionCard.querySelector('.question-title').textContent.trim();
             const hours = checkbox.value;
             
             selectedItems.push({
-                question: questionNumber,
-                hours: hours
+                questionNumber: questionNumber,
+                questionTitle: questionTitle,
+                estimatedHours: hours,
+                isEstimated: hours !== 'TBD'
             });
             
             if (hours !== 'TBD' && !isNaN(hours)) {
@@ -341,58 +344,58 @@ function initializeForm(totalQuestions) {
             return;
         }
         
-        // Display success message with summary
-        let hoursText = '';
-        let capacityInfo = '';
+        // Prepare data for SharePoint submission
+        const submissionData = {
+            email: email,
+            selectedItems: selectedItems,
+            totalHours: totalHours,
+            itemsWithTBD: itemsWithoutHours,
+            capacityUsed: Math.round((totalHours / CAPACITY_LIMIT) * 100),
+            capacityLimit: CAPACITY_LIMIT,
+            timestamp: new Date().toISOString(),
+            responses: Object.fromEntries(formData)
+        };
         
-        if (totalHours > 0) {
-            hoursText = `<p><strong>Total estimated hours:</strong> ${totalHours}h`;
-            if (itemsWithoutHours > 0) {
-                hoursText += ` (+ ${itemsWithoutHours} items with TBD hours)`;
-            }
-            hoursText += '</p>';
-            
-            // Add capacity information
-            const capacityPercentage = Math.round((totalHours / CAPACITY_LIMIT) * 100);
-            if (capacityPercentage > 80) {
-                capacityInfo = `<p class="capacity-info capacity-near">⚡ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${CAPACITY_LIMIT - totalHours}h remaining)</p>`;
-            } else {
-                capacityInfo = `<p class="capacity-info capacity-ok">✅ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${CAPACITY_LIMIT - totalHours}h remaining)</p>`;
-            }
-        }
-        
-        let itemsList = '<ul>';
-        selectedItems.forEach(item => {
-            itemsList += `<li>Item ${item.question}: ${item.hours === 'TBD' ? 'TBD' : item.hours + 'h'}</li>`;
-        });
-        itemsList += '</ul>';
-        
-        resultMessage.innerHTML = `
-            <div class="success-header">
-                <strong>✅ Thank you, ${email}! Your responses have been submitted successfully.</strong>
-            </div>
-            <div class="summary-section">
-                <h3>Selected Items Summary:</h3>
-                <p><strong>Total items selected:</strong> ${selectedItems.length}</p>
-                ${hoursText}
-                ${capacityInfo}
-                <h4>Selected Items:</h4>
-                ${itemsList}
-            </div>
-        `;
-        resultMessage.classList.add('show');
-        
-        console.log('Selected items:', selectedItems);
-        console.log('Total hours:', totalHours);
-        console.log('Capacity used:', Math.round((totalHours / CAPACITY_LIMIT) * 100) + '%');
-        
-        resultMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // Update floating button after submission
-        floatingBtn.querySelector('.btn-text').textContent = 'Submitted ✓';
-        floatingBtn.querySelector('.btn-icon').textContent = '✅';
+        // Update floating button to show loading state
+        floatingBtn.querySelector('.btn-text').textContent = 'Submitting...';
+        floatingBtn.querySelector('.btn-icon').textContent = '⏳';
         floatingBtn.disabled = true;
-        floatingBtn.classList.remove('pulse', 'celebrate', 'over-capacity');
+        floatingBtn.classList.add('submitting');
+        
+        try {
+            // Submit to AWS PostgreSQL
+            const result = await submitToAWS(submissionData);
+            
+            if (result.success) {
+                // Display success message with AWS confirmation
+                showSuccessMessage(email, selectedItems, totalHours, itemsWithoutHours, CAPACITY_LIMIT, true);
+                
+                // Update floating button for success
+                floatingBtn.querySelector('.btn-text').textContent = 'Submitted ✓';
+                floatingBtn.querySelector('.btn-icon').textContent = '✅';
+                floatingBtn.classList.remove('submitting');
+                floatingBtn.classList.add('success');
+            } else {
+                // Handle AWS error
+                console.error('AWS submission failed:', result.error);
+                showError(`Failed to submit: ${result.error || 'Unknown error'}`);
+                
+                // Reset floating button
+                floatingBtn.querySelector('.btn-text').textContent = 'Submit';
+                floatingBtn.querySelector('.btn-icon').textContent = '📝';
+                floatingBtn.disabled = false;
+                floatingBtn.classList.remove('submitting');
+            }
+        } catch (error) {
+            console.error('Submission error:', error);
+            showError(`Failed to submit: ${error.message}`);
+            
+            // Reset floating button
+            floatingBtn.querySelector('.btn-text').textContent = 'Submit';
+            floatingBtn.querySelector('.btn-icon').textContent = '📝';
+            floatingBtn.disabled = false;
+            floatingBtn.classList.remove('submitting');
+        }
         
         setTimeout(() => {
             if (confirm('Would you like to submit another response?')) {
@@ -401,10 +404,11 @@ function initializeForm(totalQuestions) {
                 floatingBtn.querySelector('.btn-text').textContent = 'Submit';
                 floatingBtn.querySelector('.btn-icon').textContent = '📝';
                 floatingBtn.disabled = false;
+                floatingBtn.classList.remove('success', 'submitting');
                 updateProgress();
                 updateFloatingButton();
             }
-        }, 3000);
+        }, 5000);
     });
     
     // Add interaction effects
@@ -701,8 +705,198 @@ function initializeStickyHeaders() {
     });
 }
 
+// AWS API Configuration
+const AWS_API_CONFIG = {
+    endpoint: 'https://dubo90gxce.execute-api.us-east-1.amazonaws.com/prod/submit',
+    timeout: 30000 // 30 seconds timeout
+};
+
+// Function to submit data to AWS
+async function submitToAWS(formData) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), AWS_API_CONFIG.timeout);
+    
+    try {
+        console.log('Submitting to AWS:', formData);
+        
+        const response = await fetch(AWS_API_CONFIG.endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(formData),
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || 'Unknown server error');
+        }
+        
+        console.log('AWS submission successful:', result);
+        return result;
+        
+    } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error.name === 'AbortError') {
+            throw new Error('Request timeout - please try again');
+        }
+        
+        console.error('AWS submission failed:', error);
+        throw error;
+    }
+}
+
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    initializeStickyHeaders();
     loadQuestions();
+    const sharePointIntegration = new SharePointIntegration();
+    
+    // Initialize sticky headers
+    initializeStickyHeaders();
 });
+
+async function handleFormSubmission(formData) {
+    const email = formData.get('email');
+    
+    if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address.');
+        return;
+    }
+    
+    // Collect all responses
+    const responses = {};
+    let priorityCount = { high: 0, medium: 0, low: 0 };
+    
+    for (let [key, value] of formData.entries()) {
+        responses[key] = value;
+        if (key !== 'email') {
+            priorityCount[value]++;
+        }
+    }
+    
+    // Prepare data for SharePoint
+    const submissionData = {
+        email: email,
+        responses: responses,
+        prioritySummary: priorityCount,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Show loading state
+    const submitBtn = document.getElementById('floating-submit');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-text">Submitting...</span>';
+    
+    try {
+        // Submit to SharePoint
+        const result = await sharePointIntegration.submitToSharePoint(submissionData);
+        
+        if (result.success) {
+            showSuccessMessage(email, priorityCount);
+        } else {
+            showErrorMessage(result.error);
+        }
+    } catch (error) {
+        console.error('Submission error:', error);
+        showErrorMessage('Failed to submit form. Please try again.');
+    } finally {
+        // Restore submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span class="btn-icon">📝</span><span class="btn-text">Submit</span>';
+    }
+}
+
+function showSuccessMessage(email, priorityCount) {
+    const resultMessage = document.getElementById('result-message');
+    resultMessage.innerHTML = `
+        <div class="success-message">
+            <h3>✅ Successfully submitted to SharePoint!</h3>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Summary:</strong></p>
+            <ul>
+                <li>High Priority (Sprint 23): ${priorityCount.high} items</li>
+                <li>Medium Priority (Sprint 24): ${priorityCount.medium} items</li>
+                <li>Low Priority (Future Sprints): ${priorityCount.low} items</li>
+            </ul>
+        </div>
+    `;
+    resultMessage.classList.add('show');
+}
+
+function showErrorMessage(error) {
+    const resultMessage = document.getElementById('result-message');
+    resultMessage.innerHTML = `
+        <div class="error-message">
+            <h3>❌ Submission Error</h3>
+            <p>Failed to save to SharePoint: ${error}</p>
+            <p>Please try again or contact support.</p>
+        </div>
+    `;
+    resultMessage.classList.add('show');
+}
+
+function showSuccessMessage(email, selectedItems, totalHours, itemsWithTBD, capacityLimit, sharePointSuccess = true, error = null) {
+    const resultMessage = document.getElementById('result-message');
+    
+    let hoursText = '';
+    let capacityInfo = '';
+    
+    if (totalHours > 0) {
+        hoursText = `<p><strong>Total estimated hours:</strong> ${totalHours}h`;
+        if (itemsWithTBD > 0) {
+            hoursText += ` (+ ${itemsWithTBD} items with TBD hours)`;
+        }
+        hoursText += '</p>';
+        
+        // Add capacity information
+        const capacityPercentage = Math.round((totalHours / capacityLimit) * 100);
+        if (capacityPercentage > 80) {
+            capacityInfo = `<p class="capacity-info capacity-near">⚡ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${capacityLimit - totalHours}h remaining)</p>`;
+        } else {
+            capacityInfo = `<p class="capacity-info capacity-ok">✅ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${capacityLimit - totalHours}h remaining)</p>`;
+        }
+    }
+    
+    let itemsList = '<ul>';
+    selectedItems.forEach(item => {
+        itemsList += `<li><strong>Item ${item.questionNumber}:</strong> ${item.estimatedHours === 'TBD' ? 'TBD hours' : item.estimatedHours + ' hours'}</li>`;
+    });
+    itemsList += '</ul>';
+    
+    // SharePoint status message
+    let sharePointStatus = '';
+    if (sharePointSuccess) {
+        sharePointStatus = '<div class="sharepoint-success">📊 <strong>Successfully saved to SharePoint Excel!</strong></div>';
+    } else if (error) {
+        sharePointStatus = `<div class="sharepoint-error">⚠️ <strong>Saved locally but failed to save to SharePoint:</strong> ${error}</div>`;
+    }
+    
+    resultMessage.innerHTML = `
+        <div class="success-header">
+            <strong>✅ Thank you, ${email}! Your responses have been submitted successfully.</strong>
+        </div>
+        ${sharePointStatus}
+        <div class="summary-section">
+            <h3>Selected Items Summary:</h3>
+            <p><strong>Total items selected:</strong> ${selectedItems.length}</p>
+            ${hoursText}
+            ${capacityInfo}
+            <h4>Selected Items:</h4>
+            ${itemsList}
+            <p class="timestamp"><small>Submitted on: ${new Date().toLocaleString()}</small></p>
+        </div>
+    `;
+    resultMessage.classList.add('show');
+    resultMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}

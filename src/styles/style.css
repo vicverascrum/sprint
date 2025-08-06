@@ -867,3 +867,53 @@ button:hover {
     border: 1px solid #ffeaa7;
     color: #856404;
 }
+/* AWS Integration Styles */
+.aws-success {
+    color: #27ae60;
+    font-size: 0.9em;
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+.aws-error {
+    color: #e74c3c;
+    font-size: 0.9em;
+    margin-top: 8px;
+    font-weight: 500;
+}
+
+.error-header {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.error-details {
+    font-size: 0.8em;
+    opacity: 0.8;
+    margin-top: 10px;
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    border-radius: 4px;
+}
+
+#result-message.error {
+    border-left: 4px solid #e74c3c;
+}
+
+/* Loading state for floating button */
+.floating-submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}

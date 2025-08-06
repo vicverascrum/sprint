@@ -287,7 +287,7 @@ function initializeForm(totalQuestions) {
     form.addEventListener('change', updateProgress);
     form.addEventListener('input', updateProgress);
     
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const formData = new FormData(form);
@@ -336,46 +336,95 @@ function initializeForm(totalQuestions) {
             return;
         }
         
-        // Display success message with summary
-        let hoursText = '';
-        let capacityInfo = '';
+        // Show loading state
+        const floatingBtn = document.getElementById('floating-submit');
+        const originalBtnText = floatingBtn.querySelector('.btn-text').textContent;
+        const originalBtnIcon = floatingBtn.querySelector('.btn-icon').textContent;
         
-        if (totalHours > 0) {
-            hoursText = `<p><strong>Total estimated hours:</strong> ${totalHours}h`;
-            if (itemsWithoutHours > 0) {
-                hoursText += ` (+ ${itemsWithoutHours} items with TBD hours)`;
-            }
-            hoursText += '</p>';
+        floatingBtn.querySelector('.btn-text').textContent = 'Saving...';
+        floatingBtn.querySelector('.btn-icon').textContent = '⏳';
+        floatingBtn.disabled = true;
+        
+        try {
+            // Prepare data for AWS
+            const questionsData = await fetch('src/data/questions.json').then(r => r.json());
+            const awsData = window.AWSIntegration.prepareFormDataForAWS(formData, questionsData.questions);
             
-            // Add capacity information
-            const capacityPercentage = Math.round((totalHours / CAPACITY_LIMIT) * 100);
-            if (capacityPercentage > 80) {
-                capacityInfo = `<p class="capacity-info capacity-near">⚡ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${CAPACITY_LIMIT - totalHours}h remaining)</p>`;
-            } else {
-                capacityInfo = `<p class="capacity-info capacity-ok">✅ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${CAPACITY_LIMIT - totalHours}h remaining)</p>`;
+            console.log('Sending to AWS:', awsData);
+            
+            // Submit to AWS
+            const awsResponse = await window.AWSIntegration.submitToAWS(awsData);
+            
+            console.log('AWS Response:', awsResponse);
+            
+            // Display success message with summary
+            let hoursText = '';
+            let capacityInfo = '';
+            
+            if (totalHours > 0) {
+                hoursText = `<p><strong>Total estimated hours:</strong> ${totalHours}h`;
+                if (itemsWithoutHours > 0) {
+                    hoursText += ` (+ ${itemsWithoutHours} items with TBD hours)`;
+                }
+                hoursText += '</p>';
+                
+                // Add capacity information
+                const capacityPercentage = Math.round((totalHours / CAPACITY_LIMIT) * 100);
+                if (capacityPercentage > 80) {
+                    capacityInfo = `<p class="capacity-info capacity-near">⚡ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${CAPACITY_LIMIT - totalHours}h remaining)</p>`;
+                } else {
+                    capacityInfo = `<p class="capacity-info capacity-ok">✅ <strong>Sprint Capacity:</strong> ${capacityPercentage}% used (${CAPACITY_LIMIT - totalHours}h remaining)</p>`;
+                }
             }
+            
+            let itemsList = '<ul>';
+            selectedItems.forEach(item => {
+                itemsList += `<li>Item ${item.question}: ${item.hours === 'TBD' ? 'TBD' : item.hours + 'h'}</li>`;
+            });
+            itemsList += '</ul>';
+            
+            resultMessage.innerHTML = `
+                <div class="success-header">
+                    <strong>✅ Thank you, ${email}! Your responses have been saved to the database successfully.</strong>
+                    <p class="aws-success">🚀 Data saved to AWS at ${new Date().toLocaleString()}</p>
+                </div>
+                <div class="summary-section">
+                    <h3>Selected Items Summary:</h3>
+                    <p><strong>Total items selected:</strong> ${selectedItems.length}</p>
+                    ${hoursText}
+                    ${capacityInfo}
+                    <h4>Selected Items:</h4>
+                    ${itemsList}
+                </div>
+            `;
+            resultMessage.classList.add('show');
+            
+            // Update button to success state
+            floatingBtn.querySelector('.btn-text').textContent = 'Saved!';
+            floatingBtn.querySelector('.btn-icon').textContent = '✅';
+            
+            console.log('Form submitted successfully to AWS:', awsResponse);
+            
+        } catch (error) {
+            console.error('Error submitting to AWS:', error);
+            
+            // Show error message
+            resultMessage.innerHTML = `
+                <div class="error-header">
+                    <strong>❌ Error saving your responses</strong>
+                    <p class="aws-error">There was a problem saving your data to the database. Please try again.</p>
+                    <p class="error-details">Error: ${error.message}</p>
+                </div>
+            `;
+            resultMessage.classList.add('show', 'error');
+            
+            // Reset button
+            floatingBtn.querySelector('.btn-text').textContent = originalBtnText;
+            floatingBtn.querySelector('.btn-icon').textContent = originalBtnIcon;
+            floatingBtn.disabled = false;
+            
+            return;
         }
-        
-        let itemsList = '<ul>';
-        selectedItems.forEach(item => {
-            itemsList += `<li>Item ${item.question}: ${item.hours === 'TBD' ? 'TBD' : item.hours + 'h'}</li>`;
-        });
-        itemsList += '</ul>';
-        
-        resultMessage.innerHTML = `
-            <div class="success-header">
-                <strong>✅ Thank you, ${email}! Your responses have been submitted successfully.</strong>
-            </div>
-            <div class="summary-section">
-                <h3>Selected Items Summary:</h3>
-                <p><strong>Total items selected:</strong> ${selectedItems.length}</p>
-                ${hoursText}
-                ${capacityInfo}
-                <h4>Selected Items:</h4>
-                ${itemsList}
-            </div>
-        `;
-        resultMessage.classList.add('show');
         
         console.log('Selected items:', selectedItems);
         console.log('Total hours:', totalHours);
