@@ -347,10 +347,22 @@ function initializeForm(totalQuestions) {
         
         try {
             // Prepare data for AWS
+            console.log('🔧 Preparing data for AWS...');
+            console.log('📋 FormData entries:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`   ${key}: ${value}`);
+            }
+            
             const questionsData = await fetch('src/data/questions.json').then(r => r.json());
+            console.log('📄 Questions loaded:', questionsData.questions.length);
+            
             const awsData = window.AWSIntegration.prepareFormDataForAWS(formData, questionsData.questions);
             
-            console.log('Sending to AWS:', awsData);
+            console.log('📤 Prepared AWS data:', awsData);
+            console.log('✅ Required fields check:');
+            console.log('   email:', !!awsData.email, awsData.email);
+            console.log('   selectedItems:', !!awsData.selectedItems, awsData.selectedItems?.length);
+            console.log('   totalHours:', awsData.totalHours !== undefined, awsData.totalHours);
             
             // Submit to AWS
             const awsResponse = await window.AWSIntegration.submitToAWS(awsData);

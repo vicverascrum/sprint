@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Browser Behavior</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; }
+        form { border: 1px solid #ccc; padding: 20px; margin: 20px 0; }
+        input { margin: 5px 0; padding: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Browser Behavior</h1>
+    
+    <button onclick="testFormSubmission()">Test Form Submission</button>
+    <button onclick="clearResults()">Clear</button>
+    
+    <form id="test-form">
+        <div>
+            <label>Email:</label><br>
+            <input type="email" id="email" name="email" value="browser-test@foundever.com" required>
+        </div>
+        <div>
+            <label><input type="checkbox" id="question1" name="question1"> Question 1</label>
+        </div>
+        <div>
+            <label><input type="checkbox" id="question2" name="question2"> Question 2</label>
+        </div>
+        <button type="button" onclick="testFormSubmission()">Test Submit</button>
+    </form>
+    
+    <div id="results"></div>
+
+    <script src="config.js"></script>
+    <script src="src/scripts/aws-integration.js"></script>
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testFormSubmission() {
+            addResult('🧪 Testing form submission...', 'info');
+            
+            try {
+                const form = document.getElementById('test-form');
+                const formData = new FormData(form);
+                
+                // Verificar FormData
+                addResult('📋 FormData contents:', 'info');
+                for (let [key, value] of formData.entries()) {
+                    addResult(`   ${key}: ${value}`, 'info');
+                }
+                
+                // Cargar questions.json
+                addResult('📄 Loading questions.json...', 'info');
+                const questionsResponse = await fetch('src/data/questions.json');
+                const questionsData = await questionsResponse.json();
+                
+                addResult(`✅ Loaded ${questionsData.questions.length} questions`, 'info');
+                
+                // Preparar datos
+                addResult('🔧 Preparing data with prepareFormDataForAWS...', 'info');
+                const awsData = window.AWSIntegration.prepareFormDataForAWS(formData, questionsData.questions);
+                
+                addResult('📤 Prepared data:', 'info');
+                addResult(`<pre>${JSON.stringify(awsData, null, 2)}</pre>`, 'info');
+                
+                // Verificar campos requeridos
+                const hasEmail = !!awsData.email;
+                const hasSelectedItems = awsData.selectedItems && awsData.selectedItems.length > 0;
+                const hasTotalHours = awsData.totalHours !== undefined;
+                
+                addResult(`✅ Required fields check:`, 'info');
+                addResult(`   email: ${hasEmail ? '✅' : '❌'} (${awsData.email})`, hasEmail ? 'success' : 'error');
+                addResult(`   selectedItems: ${hasSelectedItems ? '✅' : '❌'} (${awsData.selectedItems?.length || 0} items)`, hasSelectedItems ? 'success' : 'error');
+                addResult(`   totalHours: ${hasTotalHours ? '✅' : '❌'} (${awsData.totalHours})`, hasTotalHours ? 'success' : 'error');
+                
+                if (!hasEmail || !hasSelectedItems || !hasTotalHours) {
+                    addResult('❌ Missing required fields - cannot submit', 'error');
+                    return;
+                }
+                
+                // Enviar a AWS
+                addResult('🚀 Submitting to AWS...', 'info');
+                const response = await window.AWSIntegration.submitToAWS(awsData);
+                
+                addResult(`✅ Success! Response: ${JSON.stringify(response)}`, 'success');
+                
+            } catch (error) {
+                addResult(`❌ Error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        // Auto-check checkboxes for testing
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('question1').checked = true;
+            document.getElementById('question2').checked = true;
+        });
+    </script>
+</body>
+</html>
