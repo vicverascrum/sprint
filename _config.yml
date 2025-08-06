@@ -1,34 +1,6 @@
-# GitHub Pages Configuration
+# GitHub Pages - Static Site (No Jekyll Processing)
+# The .nojekyll file disables Jekyll processing
+# This ensures JavaScript files are served as-is
+
 title: "Sprint Prioritization Form"
 description: "Web-based survey form for sprint prioritization with AWS integration"
-url: "https://vicverascrum.github.io"
-baseurl: "/sprint"
-
-# Build settings
-markdown: kramdown
-highlighter: rouge
-
-# Plugins
-plugins:
-  - jekyll-feed
-  - jekyll-sitemap
-
-# Exclude files from processing
-exclude:
-  - node_modules/
-  - package*.json
-  - README.md
-  - .gitignore
-  - "*.js"
-  - "*.md"
-  - Foundever.pdf
-
-# Include files
-include:
-  - config.js
-  - src/
-
-# GitHub Pages settings
-github:
-  repository_name: sprint
-  repository_url: https://github.com/vicverascrum/sprint

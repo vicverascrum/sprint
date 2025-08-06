@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Post-Push</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        button { padding: 10px 20px; margin: 5px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Post-Push</h1>
+    
+    <button onclick="runFullDiagnostic()">🧪 Run Full Diagnostic</button>
+    <button onclick="clearResults()">Clear</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function runFullDiagnostic() {
+            addResult('🔍 Starting full diagnostic...', 'info');
+            
+            try {
+                // Test 1: Check if config.js loads
+                addResult('📋 Test 1: Loading config.js...', 'info');
+                try {
+                    const configResponse = await fetch('config.js');
+                    if (configResponse.ok) {
+                        const configText = await configResponse.text();
+                        addResult(`✅ config.js loaded (${configText.length} chars)`, 'success');
+                        
+                        // Execute config.js
+                        eval(configText);
+                        if (window.CONFIG) {
+                            addResult('✅ CONFIG object created', 'success');
+                            addResult(`📡 API URL: ${window.CONFIG.AWS.API_BASE_URL}`, 'info');
+                        } else {
+                            addResult('❌ CONFIG object not found after loading', 'error');
+                        }
+                    } else {
+                        addResult(`❌ config.js failed to load: ${configResponse.status}`, 'error');
+                    }
+                } catch (error) {
+                    addResult(`❌ config.js error: ${error.message}`, 'error');
+                }
+
+                // Test 2: Check if aws-integration.js loads
+                addResult('📋 Test 2: Loading aws-integration.js...', 'info');
+                try {
+                    const awsResponse = await fetch('src/scripts/aws-integration.js');
+                    if (awsResponse.ok) {
+                        const awsText = await awsResponse.text();
+                        addResult(`✅ aws-integration.js loaded (${awsText.length} chars)`, 'success');
+                        
+                        // Execute aws-integration.js
+                        eval(awsText);
+                        if (window.AWSIntegration) {
+                            addResult('✅ AWSIntegration object created', 'success');
+                            addResult(`🔧 Available functions: ${Object.keys(window.AWSIntegration).join(', ')}`, 'info');
+                        } else {
+                            addResult('❌ AWSIntegration object not found after loading', 'error');
+                        }
+                    } else {
+                        addResult(`❌ aws-integration.js failed to load: ${awsResponse.status}`, 'error');
+                    }
+                } catch (error) {
+                    addResult(`❌ aws-integration.js error: ${error.message}`, 'error');
+                }
+
+                // Test 3: Test AWS connection
+                if (window.AWSIntegration && window.AWSIntegration.testAWSConnection) {
+                    addResult('📋 Test 3: Testing AWS connection...', 'info');
+                    try {
+                        const connectionResult = await window.AWSIntegration.testAWSConnection();
+                        if (connectionResult) {
+                            addResult('✅ AWS connection test PASSED', 'success');
+                        } else {
+                            addResult('❌ AWS connection test FAILED', 'error');
+                        }
+                    } catch (error) {
+                        addResult(`❌ AWS connection error: ${error.message}`, 'error');
+                    }
+                } else {
+                    addResult('⚠️ Cannot test AWS connection - function not available', 'warning');
+                }
+
+                // Test 4: Direct API test
+                addResult('📋 Test 4: Direct API test...', 'info');
+                try {
+                    const testData = {
+                        email: 'debug-post-push@foundever.com',
+                        selectedItems: [
+                            {
+                                id: 'debug-test',
+                                title: 'Debug Post-Push Test',
+                                estimatedHours: 2
+                            }
+                        ],
+                        totalHours: 2,
+                        submissionDate: new Date().toISOString(),
+                        sprintNumber: 23,
+                        summary: {
+                            totalItems: 1,
+                            itemsWithTBD: 0,
+                            capacityUsed: 1,
+                            remainingCapacity: 258,
+                            isOverCapacity: false
+                        },
+                        metadata: {
+                            userAgent: navigator.userAgent,
+                            timestamp: new Date().toISOString(),
+                            formVersion: '1.0.0',
+                            testConnection: true
+                        }
+                    };
+
+                    const apiResponse = await fetch('https://dubo90gxce.execute-api.us-east-1.amazonaws.com/prod/submit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(testData)
+                    });
+
+                    if (apiResponse.ok) {
+                        const result = await apiResponse.json();
+                        addResult(`✅ Direct API test PASSED - ID: ${result.id}`, 'success');
+                        addResult(`<pre>${JSON.stringify(result, null, 2)}</pre>`, 'info');
+                    } else {
+                        const errorText = await apiResponse.text();
+                        addResult(`❌ Direct API test FAILED: ${apiResponse.status}`, 'error');
+                        addResult(`Error: ${errorText}`, 'error');
+                    }
+                } catch (error) {
+                    addResult(`❌ Direct API error: ${error.message}`, 'error');
+                }
+
+                addResult('🎉 Diagnostic complete!', 'info');
+
+            } catch (error) {
+                addResult(`❌ Diagnostic error: ${error.message}`, 'error');
+                console.error('Full diagnostic error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
