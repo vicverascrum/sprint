@@ -197,9 +197,9 @@ function createQuestionCard(question, questionNumber) {
                 <div class="dropdown-group">
                     <select class="dropdown-select priority-dropdown" name="${question.id}_priority">
                         <option value="" disabled selected>Select Priority</option>
-                        <option value="high">🔴 High Priority</option>
-                        <option value="medium">🟡 Medium Priority</option>
-                        <option value="low">🟢 Low Priority</option>
+                        <option value="high">🔴 High Priority (Sprint 23)</option>
+                        <option value="medium">🟡 Medium Priority (Sprint 24)</option>
+                        <option value="low">🟢 Low Priority (Any other sprint)</option>
                     </select>
                 </div>
             </div>
@@ -383,7 +383,9 @@ function initializeForm(totalQuestions) {
             const baseQuestionTitle = questionData?.title || 'Question not found';
             
             // Concatenate priority with question title
-            const priorityLabel = priority === 'high' ? 'HIGH PRIORITY' : priority === 'medium' ? 'MEDIUM PRIORITY' : 'LOW PRIORITY';
+            const priorityLabel = priority === 'high' ? 'HIGH PRIORITY (SPRINT 23)' : 
+                                 priority === 'medium' ? 'MEDIUM PRIORITY (SPRINT 24)' : 
+                                 'LOW PRIORITY (ANY OTHER SPRINT)';
             const questionTitle = `${baseQuestionTitle} - ${priorityLabel}`;
             
             // Include question title with priority, and hours
