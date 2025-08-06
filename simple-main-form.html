@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Main Form - Sprint 23</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .question-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .question-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        .text-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .checkbox-group input {
+            margin-right: 10px;
+        }
+        .floating-submit-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 15px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+        }
+        .floating-submit-btn:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="form-header">
+        <h1>Prioritization for Sprint 23</h1>
+        <p>Simple version for debugging</p>
+    </div>
+    
+    <div id="status" class="status info">🔄 Loading questions...</div>
+    
+    <form id="survey-form">
+        <div id="questions-container">
+            <!-- Questions will be loaded here -->
+        </div>
+    </form>
+    
+    <button type="submit" form="survey-form" class="floating-submit-btn" id="floating-submit">
+        📝 Submit
+    </button>
+
+    <script src="config.js"></script>
+    <script src="src/scripts/aws-integration.js"></script>
+    
+    <script>
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        async function loadQuestionsSimple() {
+            try {
+                updateStatus('📡 Fetching questions.json...', 'info');
+                
+                const response = await fetch('src/data/questions.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                updateStatus(`✅ Loaded ${data.questions.length} questions`, 'success');
+                
+                const container = document.getElementById('questions-container');
+                container.innerHTML = ''; // Clear loading message
+                
+                data.questions.forEach((question, index) => {
+                    const questionDiv = document.createElement('div');
+                    questionDiv.className = 'question-card';
+                    
+                    if (question.type === 'email') {
+                        questionDiv.innerHTML = `
+                            <div class="question-title">${question.title}</div>
+                            <div class="input-group">
+                                <input type="email" id="${question.id}" name="${question.id}" 
+                                       class="text-input" placeholder="${question.placeholder}" 
+                                       ${question.required ? 'required' : ''}>
+                            </div>
+                        `;
+                    } else if (question.type === 'checkbox') {
+                        questionDiv.innerHTML = `
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="${question.id}" name="${question.id}">
+                                <label for="${question.id}">
+                                    <div class="question-title">${question.title}</div>
+                                    <small>Estimated hours: ${question.estimatedHours || 'TBD'}</small>
+                                </label>
+                            </div>
+                        `;
+                    }
+                    
+                    container.appendChild(questionDiv);
+                });
+                
+                // Add form submission handler
+                document.getElementById('survey-form').addEventListener('submit', handleSubmit);
+                updateStatus(`🎉 Form ready! ${data.questions.length} questions loaded.`, 'success');
+                
+            } catch (error) {
+                console.error('Error loading questions:', error);
+                updateStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            updateStatus('🔄 Submitting form...', 'info');
+            
+            try {
+                const formData = new FormData(e.target);
+                
+                // Load questions for data preparation
+                const questionsResponse = await fetch('src/data/questions.json');
+                const questionsData = await questionsResponse.json();
+                
+                // Use AWSIntegration to prepare and submit data
+                const awsData = window.AWSIntegration.prepareFormDataForAWS(formData, questionsData.questions);
+                const response = await window.AWSIntegration.submitToAWS(awsData);
+                
+                updateStatus(`✅ Success! Record ID: ${response.id}`, 'success');
+                
+            } catch (error) {
+                console.error('Submission error:', error);
+                updateStatus(`❌ Submission failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Load questions when page loads
+        document.addEventListener('DOMContentLoaded', loadQuestionsSimple);
+    </script>
+</body>
+</html>
