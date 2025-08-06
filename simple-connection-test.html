@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Simple Connection Test</h1>
+    
+    <button onclick="testBasicFetch()">Test Basic Fetch</button>
+    <button onclick="testWithCurl()">Test with Manual Data</button>
+    <button onclick="clearResults()">Clear</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testBasicFetch() {
+            addResult('🧪 Testing basic fetch to AWS API...', 'info');
+            
+            const url = 'https://dubo90gxce.execute-api.us-east-1.amazonaws.com/prod/submit';
+            const testData = {
+                email: 'simple-test@foundever.com',
+                selectedItems: [{ id: 'test', title: 'Simple Test', estimatedHours: 1 }],
+                totalHours: 1,
+                submissionDate: new Date().toISOString(),
+                sprintNumber: 23
+            };
+
+            try {
+                addResult(`📡 URL: ${url}`, 'info');
+                addResult(`📤 Data: ${JSON.stringify(testData, null, 2)}`, 'info');
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                addResult(`📊 Status: ${response.status} ${response.statusText}`, 'info');
+                addResult(`📋 Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}`, 'info');
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    addResult(`❌ Error Response: ${errorText}`, 'error');
+                    return;
+                }
+
+                const result = await response.json();
+                addResult(`✅ Success: ${JSON.stringify(result, null, 2)}`, 'success');
+
+            } catch (error) {
+                addResult(`❌ Fetch Error: ${error.message}`, 'error');
+                addResult(`🔍 Error Type: ${error.name}`, 'error');
+                addResult(`📚 Stack: ${error.stack}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        async function testWithCurl() {
+            addResult('📋 Manual test data (copy this to terminal):', 'info');
+            addResult(`curl -X POST https://dubo90gxce.execute-api.us-east-1.amazonaws.com/prod/submit \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "email": "manual-test@foundever.com",
+    "selectedItems": [{"id": "test", "title": "Manual Test", "estimatedHours": 1}],
+    "totalHours": 1,
+    "submissionDate": "${new Date().toISOString()}",
+    "sprintNumber": 23
+  }'`, 'info');
+        }
+    </script>
+</body>
+</html>

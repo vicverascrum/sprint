@@ -74,6 +74,7 @@
         <div id="results"></div>
     </div>
 
+    <script src="config.js"></script>
     <script src="src/scripts/aws-integration.js"></script>
     <script>
         function addResult(message, type = 'info') {
@@ -89,7 +90,18 @@
             addResult('Testing AWS connection...', 'info');
             
             try {
+                // Verificar que AWSIntegration existe
+                if (!window.AWSIntegration) {
+                    addResult('❌ Error: AWSIntegration not loaded', 'error');
+                    return;
+                }
+                
+                addResult('✅ AWSIntegration loaded successfully', 'info');
+                addResult(`API URL: ${window.AWSIntegration.AWS_CONFIG.API_BASE_URL}`, 'info');
+                
+                // Llamar al test
                 const isConnected = await window.AWSIntegration.testAWSConnection();
+                
                 if (isConnected) {
                     addResult('✅ AWS connection successful!', 'success');
                 } else {
@@ -97,6 +109,8 @@
                 }
             } catch (error) {
                 addResult(`❌ Connection error: ${error.message}`, 'error');
+                addResult(`Error stack: ${error.stack}`, 'error');
+                console.error('Full error:', error);
             }
         }
 

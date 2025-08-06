@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Form - Sprint Prioritization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .form-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .checkbox-group {
+            margin: 10px 0;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .checkbox-group label {
+            font-weight: normal;
+            cursor: pointer;
+        }
+        .hours-badge {
+            background: #007bff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background: #218838;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>🧪 Test Form - Sprint Prioritization</h1>
+        <p>Usa este formulario para probar el envío de datos a AWS.</p>
+        
+        <form id="test-form">
+            <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" required placeholder="tu-email@foundever.com">
+            </div>
+            
+            <div class="form-group">
+                <label>Selecciona los items para el Sprint 23:</label>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="question1" name="question1" value="24">
+                    <label for="question1">
+                        Associate Evaluation form dates
+                        <span class="hours-badge">24h</span>
+                    </label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="question2" name="question2" value="4">
+                    <label for="question2">
+                        Export observation feedback
+                        <span class="hours-badge">4h</span>
+                    </label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="question3" name="question3" value="4">
+                    <label for="question3">
+                        Visual acknowledgment buttons
+                        <span class="hours-badge">4h</span>
+                    </label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="question4" name="question4" value="16">
+                    <label for="question4">
+                        Automatic email generation
+                        <span class="hours-badge">16h</span>
+                    </label>
+                </div>
+            </div>
+            
+            <button type="submit" id="submit-btn">Enviar Test</button>
+        </form>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="src/scripts/aws-integration.js"></script>
+    <script>
+        document.getElementById('test-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const result = document.getElementById('result');
+            
+            // Mostrar loading
+            result.className = 'result loading';
+            result.style.display = 'block';
+            result.innerHTML = '⏳ Enviando datos a AWS...';
+            submitBtn.disabled = true;
+            
+            try {
+                const formData = new FormData(this);
+                const email = formData.get('email');
+                
+                // Preparar datos
+                const selectedItems = [];
+                let totalHours = 0;
+                
+                const questions = [
+                    { id: 'question1', title: 'Associate Evaluation form dates', estimatedHours: 24 },
+                    { id: 'question2', title: 'Export observation feedback', estimatedHours: 4 },
+                    { id: 'question3', title: 'Visual acknowledgment buttons', estimatedHours: 4 },
+                    { id: 'question4', title: 'Automatic email generation', estimatedHours: 16 }
+                ];
+                
+                questions.forEach(question => {
+                    if (formData.get(question.id)) {
+                        selectedItems.push(question);
+                        totalHours += question.estimatedHours;
+                    }
+                });
+                
+                if (selectedItems.length === 0) {
+                    throw new Error('Debes seleccionar al menos un item');
+                }
+                
+                const awsData = {
+                    email: email,
+                    selectedItems: selectedItems,
+                    totalHours: totalHours,
+                    submissionDate: new Date().toISOString(),
+                    sprintNumber: 23,
+                    summary: {
+                        totalItems: selectedItems.length,
+                        itemsWithTBD: 0,
+                        capacityUsed: Math.round((totalHours / 260) * 100),
+                        remainingCapacity: Math.max(0, 260 - totalHours),
+                        isOverCapacity: totalHours > 260
+                    },
+                    metadata: {
+                        userAgent: navigator.userAgent,
+                        timestamp: new Date().toISOString(),
+                        formVersion: '1.0.0'
+                    }
+                };
+                
+                console.log('Enviando:', awsData);
+                
+                // Enviar a AWS
+                const response = await window.AWSIntegration.submitToAWS(awsData);
+                
+                // Mostrar éxito
+                result.className = 'result success';
+                result.innerHTML = `
+                    <strong>✅ ¡Éxito!</strong><br>
+                    Datos guardados correctamente en AWS<br>
+                    <strong>ID:</strong> ${response.id}<br>
+                    <strong>Email:</strong> ${email}<br>
+                    <strong>Items:</strong> ${selectedItems.length}<br>
+                    <strong>Horas:</strong> ${totalHours}h<br>
+                    <strong>Fecha:</strong> ${new Date().toLocaleString()}
+                `;
+                
+                // Reset form
+                this.reset();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                result.className = 'result error';
+                result.innerHTML = `
+                    <strong>❌ Error</strong><br>
+                    ${error.message}
+                `;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
