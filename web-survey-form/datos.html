@@ -201,7 +201,10 @@
     <div class="container">
         <h1>📋 Datos del Formulario Sprint</h1>
         
-        <button class="refresh-btn" onclick="cargarDatos()">🔄 Actualizar Datos</button>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="refresh-btn" onclick="cargarDatos()">🔄 Actualizar Datos</button>
+            <button class="refresh-btn" id="togglePagination" onclick="togglePaginationMode()" style="background: #6c757d;">📄 Activar Paginación</button>
+        </div>
         
         <div class="stats" id="estadisticas">
             <h3>Cargando estadísticas...</h3>
@@ -223,6 +226,26 @@
         let allSubmissions = [];
         let currentPage = 1;
         let itemsPerPage = 10;
+        let paginationEnabled = false; // Start with pagination disabled to show all data
+        
+        function togglePaginationMode() {
+            paginationEnabled = !paginationEnabled;
+            const toggleBtn = document.getElementById('togglePagination');
+            
+            if (paginationEnabled) {
+                toggleBtn.textContent = '📄 Desactivar Paginación';
+                toggleBtn.style.background = '#dc3545';
+            } else {
+                toggleBtn.textContent = '📄 Activar Paginación';
+                toggleBtn.style.background = '#6c757d';
+                currentPage = 1; // Reset to first page when disabling
+            }
+            
+            // Re-render the table
+            if (allSubmissions.length > 0) {
+                mostrarTablaPaginada();
+            }
+        }
         
         async function cargarDatos() {
             const contenido = document.getElementById('contenido');
@@ -270,17 +293,25 @@
                 return;
             }
             
-            // Calculate pagination
-            const totalPages = Math.ceil(allSubmissions.length / itemsPerPage);
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const currentSubmissions = allSubmissions.slice(startIndex, endIndex);
+            let currentSubmissions = allSubmissions;
+            let startIndex = 0;
+            
+            // Only apply pagination if enabled
+            if (paginationEnabled) {
+                const totalPages = Math.ceil(allSubmissions.length / itemsPerPage);
+                startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                currentSubmissions = allSubmissions.slice(startIndex, endIndex);
+                
+                // Show pagination controls
+                mostrarPaginacion(totalPages);
+            } else {
+                // Hide pagination when disabled
+                document.getElementById('paginacionContainer').style.display = 'none';
+            }
             
             // Show table
             mostrarTabla(currentSubmissions, startIndex);
-            
-            // Show pagination controls
-            mostrarPaginacion(totalPages);
         }
         
         function mostrarTabla(submissions, startIndex = 0) {
@@ -400,6 +431,8 @@
         }
         
         function cambiarPagina(nuevaPagina) {
+            if (!paginationEnabled) return; // Don't change pages if pagination is disabled
+            
             const totalPages = Math.ceil(allSubmissions.length / itemsPerPage);
             if (nuevaPagina >= 1 && nuevaPagina <= totalPages) {
                 currentPage = nuevaPagina;
@@ -410,6 +443,8 @@
         }
         
         function cambiarItemsPorPagina(nuevosItems) {
+            if (!paginationEnabled) return; // Don't change items per page if pagination is disabled
+            
             itemsPerPage = parseInt(nuevosItems);
             currentPage = 1; // Reset to first page
             mostrarTablaPaginada();

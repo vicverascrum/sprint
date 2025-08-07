@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datos Sprint - Vista Simple</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .controls {
+            margin: 15px 0;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn-export {
+            background: #28a745;
+        }
+        
+        .btn-export:hover {
+            background: #218838;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        th {
+            background: #f8f9fa;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: top;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .email {
+            font-weight: 500;
+            color: #667eea;
+            max-width: 200px;
+            word-break: break-word;
+        }
+        
+        .hours-badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .date {
+            color: #6c757d;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        
+        .items-list {
+            max-width: 400px;
+        }
+        
+        .item {
+            background: #f8f9fa;
+            padding: 6px 10px;
+            margin: 2px 0;
+            border-radius: 6px;
+            font-size: 13px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .item.high-priority {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .item.medium-priority {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+        
+        .item.low-priority {
+            border-left-color: #28a745;
+            background: #f8fff8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .stats {
+                gap: 15px;
+            }
+            
+            .stat-number {
+                font-size: 20px;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 8px 4px;
+            }
+            
+            .items-list {
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Datos Sprint - Vista Simple</h1>
+            <div class="stats" id="estadisticas">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalSubmissions">-</div>
+                    <div class="stat-label">Total Respuestas</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="totalHours">-</div>
+                    <div class="stat-label">Total Horas</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="averageHours">-</div>
+                    <div class="stat-label">Promedio Horas</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn" onclick="cargarDatos()">🔄 Actualizar</button>
+                <button class="btn btn-export" onclick="exportarCSV()">📊 Exportar CSV</button>
+                <button class="btn" onclick="toggleView()">👁️ Vista Compacta</button>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <div id="contenido">
+                <div class="loading">Cargando datos...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let compactView = false;
+        
+        async function cargarDatos() {
+            const contenido = document.getElementById('contenido');
+            contenido.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
+            
+            try {
+                const response = await fetch('https://dubo90gxce.execute-api.us-east-1.amazonaws.com/prod/query');
+                const data = await response.json();
+                
+                if (data.success && data.submissions) {
+                    allData = data.submissions;
+                    mostrarEstadisticas(allData);
+                    mostrarTabla(allData);
+                } else {
+                    throw new Error('No se pudieron cargar los datos');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                contenido.innerHTML = '<div class="error">❌ Error al cargar los datos. Intenta de nuevo.</div>';
+                document.getElementById('totalSubmissions').textContent = 'Error';
+                document.getElementById('totalHours').textContent = 'Error';
+                document.getElementById('averageHours').textContent = 'Error';
+            }
+        }
+        
+        function mostrarEstadisticas(submissions) {
+            const total = submissions.length;
+            const totalHoras = submissions.reduce((sum, s) => sum + s.totalHours, 0);
+            const promedio = total > 0 ? Math.round(totalHoras / total) : 0;
+            
+            document.getElementById('totalSubmissions').textContent = total;
+            document.getElementById('totalHours').textContent = `${totalHoras}h`;
+            document.getElementById('averageHours').textContent = `${promedio}h`;
+        }
+        
+        function mostrarTabla(submissions) {
+            const contenido = document.getElementById('contenido');
+            
+            if (submissions.length === 0) {
+                contenido.innerHTML = '<div class="no-data">📭 No hay datos disponibles</div>';
+                return;
+            }
+            
+            let tabla = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th style="width: 200px;">📧 Email</th>
+                            <th style="width: 80px;">⏱️ Horas</th>
+                            <th style="width: 150px;">📅 Fecha</th>
+                            <th>📝 Items Seleccionados</th>
+                            ${!compactView ? '<th style="width: 120px;">🎯 Prioridades</th>' : ''}
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            submissions.forEach((submission, index) => {
+                const fecha = new Date(submission.submittedAt).toLocaleString('es-ES', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Process items
+                let itemsHTML = '';
+                let prioritiesHTML = '';
+                const priorityCount = { high: 0, medium: 0, low: 0 };
+                
+                if (submission.selections && submission.selections.length > 0) {
+                    submission.selections.forEach(item => {
+                        const priority = item.priority || 'unknown';
+                        const priorityClass = priority === 'high' ? 'high-priority' : 
+                                            priority === 'medium' ? 'medium-priority' : 'low-priority';
+                        
+                        priorityCount[priority] = (priorityCount[priority] || 0) + 1;
+                        
+                        if (compactView) {
+                            const title = item.questionTitle ? 
+                                (item.questionTitle.length > 60 ? item.questionTitle.substring(0, 60) + '...' : item.questionTitle) :
+                                'Item desconocido';
+                            itemsHTML += `<div class="item ${priorityClass}">${title} (${item.estimatedHours || item.hours}h)</div>`;
+                        } else {
+                            const title = item.questionTitle || 'Item desconocido';
+                            itemsHTML += `<div class="item ${priorityClass}">${title} (${item.estimatedHours || item.hours}h)</div>`;
+                        }
+                    });
+                    
+                    prioritiesHTML = `
+                        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                            ${priorityCount.high > 0 ? `<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">🔴 ${priorityCount.high}</span>` : ''}
+                            ${priorityCount.medium > 0 ? `<span style="background: #ffc107; color: black; padding: 2px 6px; border-radius: 10px; font-size: 11px;">🟡 ${priorityCount.medium}</span>` : ''}
+                            ${priorityCount.low > 0 ? `<span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">🟢 ${priorityCount.low}</span>` : ''}
+                        </div>
+                    `;
+                } else {
+                    itemsHTML = '<div class="item">Sin items seleccionados</div>';
+                    prioritiesHTML = '<span style="color: #999;">N/A</span>';
+                }
+                
+                tabla += `
+                    <tr>
+                        <td><strong>${index + 1}</strong></td>
+                        <td class="email">${submission.email}</td>
+                        <td><span class="hours-badge">${submission.totalHours}h</span></td>
+                        <td class="date">${fecha}</td>
+                        <td><div class="items-list">${itemsHTML}</div></td>
+                        ${!compactView ? `<td>${prioritiesHTML}</td>` : ''}
+                    </tr>
+                `;
+            });
+            
+            tabla += `
+                    </tbody>
+                </table>
+            `;
+            
+            contenido.innerHTML = tabla;
+        }
+        
+        function toggleView() {
+            compactView = !compactView;
+            const btn = event.target;
+            btn.textContent = compactView ? '👁️ Vista Completa' : '👁️ Vista Compacta';
+            mostrarTabla(allData);
+        }
+        
+        function exportarCSV() {
+            if (allData.length === 0) {
+                alert('No hay datos para exportar');
+                return;
+            }
+            
+            let csv = 'Email,Fecha,Total Horas,Items Seleccionados,Prioridades\n';
+            
+            allData.forEach(submission => {
+                const fecha = new Date(submission.submittedAt).toLocaleString('es-ES');
+                const items = submission.selections ? 
+                    submission.selections.map(item => `${item.questionTitle} (${item.estimatedHours || item.hours}h)`).join('; ') :
+                    'Sin items';
+                
+                const priorities = submission.selections ?
+                    submission.selections.map(item => item.priority).join('; ') :
+                    'N/A';
+                
+                csv += `"${submission.email}","${fecha}",${submission.totalHours},"${items}","${priorities}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `datos-sprint-${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Auto-refresh every 30 seconds
+        setInterval(cargarDatos, 30000);
+        
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', cargarDatos);
+    </script>
+</body>
+</html>
