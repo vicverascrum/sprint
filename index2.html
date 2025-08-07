@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prioritization for Sprint 23 - Foundever</title>
+    <link rel="stylesheet" href="src/styles/style.css">
+    <link rel="stylesheet" href="src/styles/foundever-theme.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="form-header">
+        <h1 id="form-title">Prioritization for Sprint 23</h1>
+    </div>
+    
+    <div class="container">
+        <form id="survey-form">
+            <!-- Questions will be dynamically loaded here -->
+            <div id="questions-container"></div>
+        </form>
+        
+        <div id="result-message"></div>
+    </div>
+    
+    <!-- Floating Submit Button -->
+    <button type="submit" form="survey-form" class="floating-submit-btn" id="floating-submit">
+        <span class="btn-icon">📝</span>
+        <span class="btn-text">Submit</span>
+    </button>
+    
+    <script src="config.js"></script>
+    <script src="src/scripts/aws-integration.js"></script>
+    <script src="src/scripts/main-dropdown.js"></script>
+    <script src="src/scripts/main.js"></script>
+</body>
+</html>
